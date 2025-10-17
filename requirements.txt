@@ -1,0 +1,9 @@
+aiogram
+alembic
+beautifulsoup4
+lxml
+python-dotenv
+requests-cache
+SQLAlchemy
+tqdm
+urllib3

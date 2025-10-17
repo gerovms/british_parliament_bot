@@ -1,0 +1,7 @@
+version: "3.9"
+services:
+  bot:
+    build: .
+    volumes:
+      - ./results:/app/results
+    restart: unless-stopped
