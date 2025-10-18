@@ -1,3 +1,4 @@
+import gc
 import logging
 from typing import Any, Dict, List
 
@@ -58,6 +59,8 @@ async def parsing_fork(data: Dict):
             primordial_soup = BeautifulSoup(page, 'lxml')
             years = primordial_soup.find_all('span', {'class':
                                                       'speeches-by-year'})
+            del primordial_soup
+            gc.collect()
             if years:
                 if data['from_date'] == '0' and data['to_date'] == '0':
                     for year in years:
@@ -102,6 +105,8 @@ async def parsing_fork(data: Dict):
                             continue
                         soup = BeautifulSoup(page, 'lxml')
                         commons_tag = soup.find('h3', {'id': 'commons'})
+                        del soup
+                        gc.collect()
                         if commons_tag:
                             ol_tag = commons_tag.find_next_sibling()
                             commons_sittings = ol_tag.find_all('a')
@@ -153,6 +158,7 @@ async def parsing_fork(data: Dict):
     else:
         filename = (f'{data["keyword"]}.'
                     f'{data["from_date"]}.{data["to_date"]}.txt')
+    gc.collect()
     return result, filename
 
 
@@ -167,6 +173,8 @@ async def parse_headers_with_person(data: Dict,
         return desired_data
     soup = BeautifulSoup(page, 'lxml')
     contributions = soup.find_all('p', {'class': 'person-contribution'})
+    del soup
+    gc.collect()
     for contribution in contributions:
         title = contribution.find('a')
         date = contribution.find('span', {'class': 'date'}).text
@@ -188,6 +196,8 @@ async def parse_texts_with_person(data: Dict,
         return desired_data 
     soup = BeautifulSoup(page, 'lxml')
     contributions = soup.find_all('p', {'class': 'person-contribution'})
+    del soup
+    gc.collect()
     for contribution in contributions:
         title = contribution.find('a')
         date = contribution.find('span', {'class': 'date'}).text
@@ -249,6 +259,8 @@ async def parse_texts_without_person(
             continue
         soup = BeautifulSoup(page, 'lxml')
         sitting_text = await parse_sitting(soup)
+        del soup
+        gc.collect()
         if data['keyword'] in sitting_text:
             desired_data.append(
                 [f'{year}.{month}.{day} {sitting.text} – '
@@ -262,6 +274,8 @@ async def parse_texts_without_person(
             continue
         soup = BeautifulSoup(page, 'lxml')
         sitting_text = await parse_sitting(soup)
+        del soup
+        gc.collect()
         if data['keyword'] in sitting_text:
             desired_data.append(
                 [f'{year}.{month}.{day} {sitting.text} – '
