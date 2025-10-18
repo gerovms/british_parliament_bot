@@ -1,6 +1,7 @@
 aiogram
 alembic
 beautifulsoup4
+httpx
 lxml
 python-dotenv
 requests-cache
