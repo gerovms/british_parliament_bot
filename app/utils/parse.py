@@ -1,5 +1,4 @@
 import logging
-from http import HTTPStatus
 from typing import Any, Dict, List
 
 import httpx
@@ -45,12 +44,9 @@ async def fetch_page(client: httpx.AsyncClient, url: str) -> str | None:
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 404:
             logging.warning(f'404 Not Found: {url}, пропускаем')
-            return None  # просто пропускаем
+            return None
         else:
-            raise  # для других ошибок кидаем дальше
-    except httpx.RequestError as e:
-        logging.error(f'Ошибка запроса {url}: {e}')
-        return None
+            return None
 
 
 async def parsing_fork(data: Dict):
@@ -101,6 +97,8 @@ async def parsing_fork(data: Dict):
                         link_to_day = f'{BASE_NO_PESON_URL}{year}/{month}/{day}'
                         page = await fetch_page(client, link_to_day)
                         if page is None:
+                            logging.warning(f'Страница {link_to_day} '
+                                            'не получена, пропускаем')
                             continue
                         soup = BeautifulSoup(page, 'lxml')
                         commons_tag = soup.find('h3', {'id': 'commons'})
@@ -163,6 +161,10 @@ async def parse_headers_with_person(data: Dict,
                                     client: httpx.AsyncClient):
     desired_data = []
     page = await fetch_page(client, link_to_year)
+    if page is None:
+        logging.warning(f'Страница {link_to_year} '
+                        'не получена, пропускаем')
+        return desired_data
     soup = BeautifulSoup(page, 'lxml')
     contributions = soup.find_all('p', {'class': 'person-contribution'})
     for contribution in contributions:
@@ -180,12 +182,20 @@ async def parse_texts_with_person(data: Dict,
                                   client: httpx.AsyncClient):
     desired_data = []
     page = await fetch_page(client, link_to_year)
+    if page is None:
+        logging.warning(f'Страница {link_to_year} '
+                        'не получена, пропускаем')
+        return desired_data 
     soup = BeautifulSoup(page, 'lxml')
     contributions = soup.find_all('p', {'class': 'person-contribution'})
     for contribution in contributions:
         title = contribution.find('a')
         date = contribution.find('span', {'class': 'date'}).text
         sub_page = await fetch_page(client, f'{MAIN_URL}{title["href"]}')
+        if page is None:
+            logging.warning(f'Страница {MAIN_URL}{title["href"]} '
+                            'не получена, пропускаем')
+            continue
         sub_soup = BeautifulSoup(sub_page.text, 'lxml')
         sitting_text = await parse_sitting(sub_soup)
         if data['keyword'] in sitting_text:
@@ -233,6 +243,10 @@ async def parse_texts_without_person(
     logging.info(f'Парсим {year}/{month}/{day}')
     for sitting in commons_sittings:
         page = await fetch_page(client, f'{MAIN_URL}{sitting["href"]}')
+        if page is None:
+            logging.warning(f'Страница {MAIN_URL}{sitting["href"]} '
+                            'не получена, пропускаем')
+            continue
         soup = BeautifulSoup(page, 'lxml')
         sitting_text = await parse_sitting(soup)
         if data['keyword'] in sitting_text:
@@ -242,6 +256,10 @@ async def parse_texts_without_person(
                 )
     for sitting in lords_sittings:
         page = await fetch_page(client, f'{MAIN_URL}{sitting["href"]}')
+        if page is None:
+            logging.warning(f'Страница {MAIN_URL}{sitting["href"]} '
+                            'не получена, пропускаем')
+            continue
         soup = BeautifulSoup(page, 'lxml')
         sitting_text = await parse_sitting(soup)
         if data['keyword'] in sitting_text:
