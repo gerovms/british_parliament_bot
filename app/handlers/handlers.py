@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import gc
 import os
 
 from aiogram import F, Router
@@ -173,17 +174,18 @@ async def pre_parsing(message: Message, state: FSMContext):
 
 async def parse_and_send(message: Message, parsed_data, filename):
     file_path = await save_parsed_data(parsed_data, filename)
-
     if not os.path.exists(file_path):
         await message.answer("Файл не удалось создать ❌",
                              reply_markup=kb.to_main)
         return
 
     document = FSInputFile(file_path, filename=filename)
+    
     await message.answer_document(document,
                                   caption="Вот твой файл с результатами 📄",
                                   reply_markup=kb.to_main)
     logging.info(f'{message.from_user} получил файл')
+    gc.collect()
 
 
 async def background_parse(message: Message, data: dict):
