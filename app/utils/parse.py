@@ -206,7 +206,7 @@ async def parse_texts_with_person(data: Dict,
             logging.warning(f'Страница {MAIN_URL}{title["href"]} '
                             'не получена, пропускаем')
             continue
-        sub_soup = BeautifulSoup(sub_page.text, 'lxml')
+        sub_soup = BeautifulSoup(sub_page, 'lxml')
         sitting_text = await parse_sitting(sub_soup)
         if data['keyword'] in sitting_text:
             desired_data.append(
