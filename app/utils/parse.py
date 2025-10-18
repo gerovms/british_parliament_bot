@@ -109,8 +109,6 @@ async def parsing_fork(data: Dict):
                             continue
                         soup = BeautifulSoup(page, 'lxml')
                         commons_tag = soup.find('h3', {'id': 'commons'})
-                        del soup
-                        gc.collect()
                         if commons_tag:
                             ol_tag = commons_tag.find_next_sibling()
                             commons_sittings = ol_tag.find_all('a')
@@ -122,6 +120,8 @@ async def parsing_fork(data: Dict):
                             lords_sittings = lords_tag.find_all('a')
                         else:
                             lords_sittings = []
+                        del soup
+                        gc.collect()
                         if data['way'] == 'in_headers':
                             result += await parse_headers_without_person(
                                 data,
