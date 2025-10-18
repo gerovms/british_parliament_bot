@@ -1,4 +1,3 @@
-# db.py
 import asyncpg
 import os
 
