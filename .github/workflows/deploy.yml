@@ -10,7 +10,8 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
@@ -23,8 +24,9 @@ jobs:
 
       - name: Build and push image
         run: |
-          docker build -t gerovms/british_parliament_bot:latest .
-          docker push ${{ secrets.DOCKER_USERNAME }}/gerovms/british_parliament_bot:latest
+          IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/british_parliament_bot:latest"
+          docker build -t $IMAGE_NAME .
+          docker push $IMAGE_NAME
 
       - name: Deploy to server
         uses: appleboy/ssh-action@v0.1.7
@@ -33,7 +35,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /path/to/deploy
+            cd /root/british_parliament_bot/
             docker-compose pull
             docker-compose up -d
 
