@@ -2,7 +2,7 @@ import logging
 from http import HTTPStatus
 from typing import Any, Dict, List
 
-import requests_cache
+import httpx
 from bs4 import BeautifulSoup
 
 from .constants import (BASE_NO_PESON_URL, FIRST_MONTH_DAY,
@@ -10,10 +10,10 @@ from .constants import (BASE_NO_PESON_URL, FIRST_MONTH_DAY,
                         MAIN_URL, MONTHS, PERSON)
 
 
-def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
+async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
     list_of_mps_url = PERSON + surname[0].lower()
-    session = requests_cache.CachedSession()
-    response = session.get(list_of_mps_url)
+    async with httpx.AsyncClient() as client:
+        response = await client.get(list_of_mps_url)
     soup = BeautifulSoup(response.text, 'lxml')
     list_of_mps = soup.find_all('li', {'class': 'person'})
     list_of_desired_mps: List[List] = [[]]
@@ -33,82 +33,97 @@ def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
     return list_of_desired_mps
 
 
-def parsing_fork(data: Dict):
+async def fetch_page(client: httpx.AsyncClient, url: str) -> str:
+    """Асинхронная загрузка страницы"""
+    response = await client.get(url, timeout=30.0)
+    response.raise_for_status()
+    return response.text
+
+
+async def parsing_fork(data: Dict):
     result = [[f'По ключевому слову "{data["keyword"]}" найдено объектов: ']]
     logging.info(f'Начинаем парсить по {data}')
-    if 'person_info' in data.keys():
-        session = requests_cache.CachedSession()
-        response = session.get(f'{PERSON}{data['person_info']}')
-        primordial_soup = BeautifulSoup(response.text, 'lxml')
-        years = primordial_soup.find_all('span', {'class': 'speeches-by-year'})
-        if years:
-            if data['from_date'] == '0' and data['to_date'] == '0':
-                for year in years:
-                    link_to_year = f'{MAIN_URL}{year.find('a')['href']}'
-                    if data['way'] == 'in_headers':
-                        result += parse_headers_with_person(data,
-                                                                  link_to_year,
-                                                                  session)
-                    elif data['way'] == 'in_texts':
-                        result += parse_texts_with_person(data,
-                                                                link_to_year,
-                                                                session)
-            else:
-                for year in range(int(data['from_date']),
-                                  int(data['to_date']) + 1):
-                    link_to_year = f'{PERSON}{data['person_info']}/{year}'
-                    if data['way'] == 'in_headers':
-                        result += parse_headers_with_person(data,
-                                                                  link_to_year,
-                                                                  session)
-                    elif data['way'] == 'in_texts':
-                        result += parse_texts_with_person(data,
-                                                                link_to_year,
-                                                                session)
-    elif 'person_info' not in data.keys():
-        session = requests_cache.CachedSession()
-        for year in range(int(data['from_date']), int(data['to_date']) + 1):
-            for month in MONTHS:
-                for day in range(FIRST_MONTH_DAY, LAST_MONTH_DAY + 1):
-                    link_to_day = f'{BASE_NO_PESON_URL}{year}/{month}/{day}'
-                    response = session.get(f'{link_to_day}')
-                    if response.status_code == HTTPStatus.NOT_FOUND:
-                        continue
-                    soup = BeautifulSoup(response.text, 'lxml')
-                    commons_tag = soup.find('h3', {'id': 'commons'})
-                    if commons_tag:
-                        ol_tag = commons_tag.find_next_sibling()
-                        commons_sittings = ol_tag.find_all('a')
-                    else:
-                        commons_sittings = []
-                    lords_tag = soup.find('h3', {'id': 'lords'})
-                    if lords_tag:
-                        ol_tag = lords_tag.find_next_sibling()
-                        lords_sittings = lords_tag.find_all('a')
-                    else:
-                        lords_sittings = []
-                    if data['way'] == 'in_headers':
-                        result += parse_headers_without_person(
-                            data,
-                            commons_sittings,
-                            lords_sittings,
-                            year,
-                            month,
-                            day
-                            )
-                    elif data['way'] == 'in_texts':
-                        result += parse_texts_without_person(
-                            data,
-                            commons_sittings,
-                            lords_sittings,
-                            year,
-                            month,
-                            day,
-                            session
-                            )
+    async with httpx.AsyncClient() as client:
+        if 'person_info' in data.keys():
+            page = await fetch_page(client, f'{PERSON}{data["person_info"]}')
+            primordial_soup = BeautifulSoup(page, 'lxml')
+            years = primordial_soup.find_all('span', {'class':
+                                                      'speeches-by-year'})
+            if years:
+                if data['from_date'] == '0' and data['to_date'] == '0':
+                    for year in years:
+                        link_to_year = f'{MAIN_URL}{year.find('a')['href']}'
+                        if data['way'] == 'in_headers':
+                            result += await parse_headers_with_person(
+                                data,
+                                link_to_year,
+                                client
+                                )
+                        elif data['way'] == 'in_texts':
+                            result += await parse_texts_with_person(
+                                data,
+                                link_to_year,
+                                client
+                                )
+                else:
+                    for year in range(int(data['from_date']),
+                                    int(data['to_date']) + 1):
+                        link_to_year = f'{PERSON}{data['person_info']}/{year}'
+                        if data['way'] == 'in_headers':
+                            result += await parse_headers_with_person(
+                                data,
+                                link_to_year,
+                                client
+                                )
+                        elif data['way'] == 'in_texts':
+                            result += await parse_texts_with_person(
+                                data,
+                                link_to_year,
+                                client
+                                )
+        elif 'person_info' not in data.keys():
+            for year in range(int(data['from_date']), int(data['to_date']) + 1):
+                for month in MONTHS:
+                    for day in range(FIRST_MONTH_DAY, LAST_MONTH_DAY + 1):
+                        link_to_day = f'{BASE_NO_PESON_URL}{year}/{month}/{day}'
+                        page = await fetch_page(client, link_to_day)
+                        if page is None:
+                            continue
+                        soup = BeautifulSoup(page, 'lxml')
+                        commons_tag = soup.find('h3', {'id': 'commons'})
+                        if commons_tag:
+                            ol_tag = commons_tag.find_next_sibling()
+                            commons_sittings = ol_tag.find_all('a')
+                        else:
+                            commons_sittings = []
+                        lords_tag = soup.find('h3', {'id': 'lords'})
+                        if lords_tag:
+                            ol_tag = lords_tag.find_next_sibling()
+                            lords_sittings = lords_tag.find_all('a')
+                        else:
+                            lords_sittings = []
+                        if data['way'] == 'in_headers':
+                            result += await parse_headers_without_person(
+                                data,
+                                commons_sittings,
+                                lords_sittings,
+                                year,
+                                month,
+                                day
+                                )
+                        elif data['way'] == 'in_texts':
+                            result += await parse_texts_without_person(
+                                data,
+                                commons_sittings,
+                                lords_sittings,
+                                year,
+                                month,
+                                day,
+                                client
+                                )
 
-    else:
-        raise Exception
+        else:
+            raise Exception
     count_result = 0
     for item in range(1, len(result)):
         count_result += len(result[item])
@@ -130,12 +145,12 @@ def parsing_fork(data: Dict):
     return result, filename
 
 
-def parse_headers_with_person(data: Dict,
+async def parse_headers_with_person(data: Dict,
                                     link_to_year: str,
-                                    session: requests_cache.CachedSession):
+                                    client: httpx.AsyncClient):
     desired_data = []
-    response = session.get(f'{link_to_year}')
-    soup = BeautifulSoup(response.text, 'lxml')
+    page = await fetch_page(client, link_to_year)
+    soup = BeautifulSoup(page, 'lxml')
     contributions = soup.find_all('p', {'class': 'person-contribution'})
     for contribution in contributions:
         title = contribution.find('a')
@@ -147,18 +162,18 @@ def parse_headers_with_person(data: Dict,
     return desired_data
 
 
-def parse_texts_with_person(data: Dict,
+async def parse_texts_with_person(data: Dict,
                                   link_to_year: str,
-                                  session: requests_cache.CachedSession):
+                                  client: httpx.AsyncClient):
     desired_data = []
-    response = session.get(f'{link_to_year}')
-    soup = BeautifulSoup(response.text, 'lxml')
+    page = await fetch_page(client, link_to_year)
+    soup = BeautifulSoup(page, 'lxml')
     contributions = soup.find_all('p', {'class': 'person-contribution'})
     for contribution in contributions:
         title = contribution.find('a')
         date = contribution.find('span', {'class': 'date'}).text
-        sub_response = session.get(f'{MAIN_URL}{title['href']}')
-        sub_soup = BeautifulSoup(sub_response.text, 'lxml')
+        sub_page = await fetch_page(client, f'{MAIN_URL}{title["href"]}')
+        sub_soup = BeautifulSoup(sub_page.text, 'lxml')
         sitting_text = parse_sitting(sub_soup)
         if data['keyword'] in sitting_text:
             desired_data.append(
@@ -167,7 +182,7 @@ def parse_texts_with_person(data: Dict,
     return desired_data
 
 
-def parse_headers_without_person(
+async def parse_headers_without_person(
                             data: Dict,
                             commons_sittings: Any,
                             lords_sittings: Any,
@@ -192,20 +207,20 @@ def parse_headers_without_person(
     return desired_data
 
 
-def parse_texts_without_person(
+async def parse_texts_without_person(
                             data: Dict,
                             commons_sittings: Any,
                             lords_sittings: Any,
                             year: int,
                             month: str,
                             day: int,
-                            session: requests_cache.CachedSession
+                            client: httpx.AsyncClient
                             ):
     desired_data = []
     logging.info(f'Парсим {year}/{month}/{day}')
     for sitting in commons_sittings:
-        response = session.get(f'{MAIN_URL}{sitting['href']}')
-        soup = BeautifulSoup(response.text, 'lxml')
+        page = await fetch_page(client, f'{MAIN_URL}{sitting["href"]}')
+        soup = BeautifulSoup(page, 'lxml')
         sitting_text = parse_sitting(soup)
         if data['keyword'] in sitting_text:
             desired_data.append(
@@ -213,8 +228,8 @@ def parse_texts_without_person(
                  f'{MAIN_URL}{sitting['href']}']
                 )
     for sitting in lords_sittings:
-        response = session.get(f'{MAIN_URL}{sitting['href']}')
-        soup = BeautifulSoup(response.text, 'lxml')
+        page = await fetch_page(client, f'{MAIN_URL}{sitting["href"]}')
+        soup = BeautifulSoup(page, 'lxml')
         sitting_text = parse_sitting(soup)
         if data['keyword'] in sitting_text:
             desired_data.append(
@@ -224,7 +239,7 @@ def parse_texts_without_person(
     return desired_data
 
 
-def parse_sitting(sub_soup):
+async def parse_sitting(sub_soup):
     sitting_text = ''
     sitting_text_tags = sub_soup.find_all(
             'div',
