@@ -1,7 +1,8 @@
+#!/usr/bin/env bash
+
 host="$1"
-shift
-port="$1"
-shift
+port="$2"
+shift 2
 timeout=30
 
 while ! nc -z "$host" "$port"; do
