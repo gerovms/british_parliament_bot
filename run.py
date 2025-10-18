@@ -1,7 +1,8 @@
 import asyncio
+import logging
 import os
-from os import getenv
 from datetime import datetime
+from os import getenv
 
 from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
@@ -11,6 +12,12 @@ from app.handlers import router
 load_dotenv()
 
 TOKEN = getenv("TOKEN")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
 
 RESULTS_DIR = os.path.join(os.getcwd(), "results")
 os.makedirs(RESULTS_DIR, exist_ok=True)

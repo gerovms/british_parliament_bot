@@ -1,3 +1,6 @@
+import logging
+import os
+
 from aiogram import F, Router
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
@@ -15,6 +18,7 @@ router = Router()
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
+    logging.info(f'{message.from_user} нажал на старт')
     await message.answer(m.START_MESSAGE, reply_markup=kb.main)
 
 
@@ -51,6 +55,7 @@ async def redir_to_ways(callback: CallbackQuery, state: FSMContext):
 @router.message(s.SearchByName.surname)
 async def list_of_mps(message: Message, state: FSMContext):
     await state.update_data(surname=message.text)
+    logging.info(f'{message.from_user} ввёл фамилию {message.text}')
     data = await state.get_data()
     data['surname'] = data['surname'].title()
     mps = await p.get_list_of_mps(data['surname'])
@@ -113,6 +118,7 @@ async def choose_searching_way(callback: CallbackQuery, state: FSMContext):
 async def type_key_word(callback: CallbackQuery, state: FSMContext):
     await state.set_state(s.SearchByWord.keyword)
     await state.update_data(way=callback.data)
+    logging.info(f'{callback.from_user} выбрал {callback.data}')
     await callback.message.edit_reply_markup(reply_markup=None)
     await callback.message.answer(m.TYPE_KEYWORD_MESSAGE,
                                   reply_markup=kb.to_main)
@@ -121,6 +127,7 @@ async def type_key_word(callback: CallbackQuery, state: FSMContext):
 
 @router.message(s.SearchByWord.keyword)
 async def type_from_date(message: Message, state: FSMContext):
+    logging.info(f'{message.from_user} ввёл ключевое слово {message.text}')
     await state.update_data(keyword=message)
     await state.set_state(s.SearchByWord.from_date)
     await message.answer(m.FROM_DATE_MESSAGE,
@@ -129,6 +136,7 @@ async def type_from_date(message: Message, state: FSMContext):
 
 @router.message(s.SearchByWord.from_date)
 async def type_to_date(message: Message, state: FSMContext):
+    logging.info(f'{message.from_user} ввёл нач. дату {message.text}')
     await state.update_data(from_date=message.text)
     await state.set_state(s.SearchByWord.to_date)
     await message.answer(m.TO_DATE_MESSAGE,
@@ -138,6 +146,7 @@ async def type_to_date(message: Message, state: FSMContext):
 @router.message(s.SearchByWord.to_date)
 async def pre_parsing(message: Message, state: FSMContext):
     await state.update_data(to_date=message.text)
+    logging.info(f'{message.from_user} ввёл кон. дату {message.text}')
     data = await state.get_data()
     validator_bool = await v.validate_date(data['from_date'],
                                            data['to_date'])
@@ -174,3 +183,4 @@ async def parse_and_send(message: Message, parsed_data, filename):
     await message.answer_document(document,
                                   caption="Вот твой файл с результатами 📄",
                                   reply_markup=kb.to_main)
+    logging.info(f'{message.from_user} получил файл')

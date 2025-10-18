@@ -1,3 +1,4 @@
+import logging
 from http import HTTPStatus
 from typing import Any, Dict, List
 
@@ -34,6 +35,7 @@ async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
 
 async def parsing_fork(data: Dict):
     result = [[f'По ключевому слову "{data["keyword"]}" найдено объектов: ']]
+    logging.info(f'Начинаем парсить по {data}')
     if 'person_info' in data.keys():
         session = requests_cache.CachedSession()
         response = session.get(f'{PERSON}{data['person_info']}')
@@ -174,6 +176,7 @@ async def parse_headers_without_person(
                             day: int,
                             ):
     desired_data = []
+    logging.info(f'Парсим {year}/{month}/{day}')
     for sitting in commons_sittings:
         if data['keyword'] in sitting.text.upper():
             desired_data.append(
@@ -199,6 +202,7 @@ async def parse_texts_without_person(
                             session: requests_cache.CachedSession
                             ):
     desired_data = []
+    logging.info(f'Парсим {year}/{month}/{day}')
     for sitting in commons_sittings:
         response = session.get(f'{MAIN_URL}{sitting['href']}')
         soup = BeautifulSoup(response.text, 'lxml')
