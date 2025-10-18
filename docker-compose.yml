@@ -1,25 +1,31 @@
 version: "3.9"
 services:
   bot:
+    build: .
     image: gerovms/british_parliament_bot:latest
     env_file:
       - ./.env
-    volumes:
-      - ./results:/app/results
-      - ./wait-for-postgres.sh:/app/wait-for-postgres.sh
     depends_on:
       - db
-    command: ["sh", "/app/wait-for-postgres.sh", "db", "python", "-m", "bot"]
+    volumes:
+      - ./results:/app/results
+    networks:
+      - bot_network
 
   db:
-    image: postgres:15
+    image: postgres:16
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - bot_network
 
 volumes:
-  pg_data:
+  db_data:
+
+networks:
+  bot_network:
