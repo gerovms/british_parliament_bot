@@ -8,6 +8,7 @@ from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 
 from app.handlers import router
+from app.db.db import init_db
 
 load_dotenv()
 
@@ -43,6 +44,7 @@ async def cleanup_results_folder():
 
 
 async def main() -> None:
+    await init_db()
     bot = Bot(token=TOKEN)
     print(f"[{datetime.now()}] Бот запущен")
 

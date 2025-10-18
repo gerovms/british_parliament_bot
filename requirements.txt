@@ -1,5 +1,6 @@
 aiogram
 alembic
+asyncpg
 beautifulsoup4
 httpx
 lxml
