@@ -13,7 +13,7 @@ from .constants import (BASE_NO_PESON_URL, FIRST_MONTH_DAY,
 async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
     list_of_mps_url = PERSON + surname[0].lower()
     async with httpx.AsyncClient() as client:
-        response = await client.get(list_of_mps_url)
+        response = await client.get(list_of_mps_url, follow_redirects=True)
     soup = BeautifulSoup(response.text, 'lxml')
     list_of_mps = soup.find_all('li', {'class': 'person'})
     list_of_desired_mps: List[List] = [[]]
@@ -35,7 +35,7 @@ async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
 
 async def fetch_page(client: httpx.AsyncClient, url: str) -> str:
     """Асинхронная загрузка страницы"""
-    response = await client.get(url, timeout=30.0)
+    response = await client.get(url, timeout=30.0, follow_redirects=True)
     response.raise_for_status()
     return response.text
 
