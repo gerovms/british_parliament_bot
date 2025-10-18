@@ -187,7 +187,7 @@ async def parse_texts_with_person(data: Dict,
         date = contribution.find('span', {'class': 'date'}).text
         sub_page = await fetch_page(client, f'{MAIN_URL}{title["href"]}')
         sub_soup = BeautifulSoup(sub_page.text, 'lxml')
-        sitting_text = parse_sitting(sub_soup)
+        sitting_text = await parse_sitting(sub_soup)
         if data['keyword'] in sitting_text:
             desired_data.append(
                 [f'{date} {title.text} – {MAIN_URL}{title['href']}']
@@ -234,7 +234,7 @@ async def parse_texts_without_person(
     for sitting in commons_sittings:
         page = await fetch_page(client, f'{MAIN_URL}{sitting["href"]}')
         soup = BeautifulSoup(page, 'lxml')
-        sitting_text = parse_sitting(soup)
+        sitting_text = await parse_sitting(soup)
         if data['keyword'] in sitting_text:
             desired_data.append(
                 [f'{year}.{month}.{day} {sitting.text} – '
@@ -243,7 +243,7 @@ async def parse_texts_without_person(
     for sitting in lords_sittings:
         page = await fetch_page(client, f'{MAIN_URL}{sitting["href"]}')
         soup = BeautifulSoup(page, 'lxml')
-        sitting_text = parse_sitting(soup)
+        sitting_text = await parse_sitting(soup)
         if data['keyword'] in sitting_text:
             desired_data.append(
                 [f'{year}.{month}.{day} {sitting.text} – '
