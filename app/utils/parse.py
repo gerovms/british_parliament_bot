@@ -13,8 +13,8 @@ from .constants import (BASE_NO_PESON_URL, FIRST_MONTH_DAY,
 async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
     list_of_mps_url = PERSON + surname[0].lower()
     async with httpx.AsyncClient() as client:
-        response = await client.get(list_of_mps_url, follow_redirects=True)
-    soup = BeautifulSoup(response.text, 'lxml')
+        page = await fetch_page(client, list_of_mps_url)
+    soup = BeautifulSoup(page, 'lxml')
     list_of_mps = soup.find_all('li', {'class': 'person'})
     list_of_desired_mps: List[List] = [[]]
     for person in list_of_mps:
@@ -33,11 +33,24 @@ async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
     return list_of_desired_mps
 
 
-async def fetch_page(client: httpx.AsyncClient, url: str) -> str:
-    """Асинхронная загрузка страницы"""
-    response = await client.get(url, timeout=30.0, follow_redirects=True)
-    response.raise_for_status()
-    return response.text
+async def fetch_page(client: httpx.AsyncClient, url: str) -> str | None:
+    """
+    Асинхронная загрузка страницы.
+    Возвращает None, если страница недоступна (404) или ошибка сети.
+    """
+    try:
+        response = await client.get(url, timeout=30.0, follow_redirects=True)
+        response.raise_for_status()
+        return response.text
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            logging.warning(f'404 Not Found: {url}, пропускаем')
+            return None  # просто пропускаем
+        else:
+            raise  # для других ошибок кидаем дальше
+    except httpx.RequestError as e:
+        logging.error(f'Ошибка запроса {url}: {e}')
+        return None
 
 
 async def parsing_fork(data: Dict):
