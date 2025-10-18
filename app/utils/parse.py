@@ -10,7 +10,7 @@ from .constants import (BASE_NO_PESON_URL, FIRST_MONTH_DAY,
                         MAIN_URL, MONTHS, PERSON)
 
 
-async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
+def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
     list_of_mps_url = PERSON + surname[0].lower()
     session = requests_cache.CachedSession()
     response = session.get(list_of_mps_url)
@@ -33,7 +33,7 @@ async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
     return list_of_desired_mps
 
 
-async def parsing_fork(data: Dict):
+def parsing_fork(data: Dict):
     result = [[f'По ключевому слову "{data["keyword"]}" найдено объектов: ']]
     logging.info(f'Начинаем парсить по {data}')
     if 'person_info' in data.keys():
@@ -46,11 +46,11 @@ async def parsing_fork(data: Dict):
                 for year in years:
                     link_to_year = f'{MAIN_URL}{year.find('a')['href']}'
                     if data['way'] == 'in_headers':
-                        result += await parse_headers_with_person(data,
+                        result += parse_headers_with_person(data,
                                                                   link_to_year,
                                                                   session)
                     elif data['way'] == 'in_texts':
-                        result += await parse_texts_with_person(data,
+                        result += parse_texts_with_person(data,
                                                                 link_to_year,
                                                                 session)
             else:
@@ -58,11 +58,11 @@ async def parsing_fork(data: Dict):
                                   int(data['to_date']) + 1):
                     link_to_year = f'{PERSON}{data['person_info']}/{year}'
                     if data['way'] == 'in_headers':
-                        result += await parse_headers_with_person(data,
+                        result += parse_headers_with_person(data,
                                                                   link_to_year,
                                                                   session)
                     elif data['way'] == 'in_texts':
-                        result += await parse_texts_with_person(data,
+                        result += parse_texts_with_person(data,
                                                                 link_to_year,
                                                                 session)
     elif 'person_info' not in data.keys():
@@ -88,7 +88,7 @@ async def parsing_fork(data: Dict):
                     else:
                         lords_sittings = []
                     if data['way'] == 'in_headers':
-                        result += await parse_headers_without_person(
+                        result += parse_headers_without_person(
                             data,
                             commons_sittings,
                             lords_sittings,
@@ -97,7 +97,7 @@ async def parsing_fork(data: Dict):
                             day
                             )
                     elif data['way'] == 'in_texts':
-                        result += await parse_texts_without_person(
+                        result += parse_texts_without_person(
                             data,
                             commons_sittings,
                             lords_sittings,
@@ -130,7 +130,7 @@ async def parsing_fork(data: Dict):
     return result, filename
 
 
-async def parse_headers_with_person(data: Dict,
+def parse_headers_with_person(data: Dict,
                                     link_to_year: str,
                                     session: requests_cache.CachedSession):
     desired_data = []
@@ -147,7 +147,7 @@ async def parse_headers_with_person(data: Dict,
     return desired_data
 
 
-async def parse_texts_with_person(data: Dict,
+def parse_texts_with_person(data: Dict,
                                   link_to_year: str,
                                   session: requests_cache.CachedSession):
     desired_data = []
@@ -159,7 +159,7 @@ async def parse_texts_with_person(data: Dict,
         date = contribution.find('span', {'class': 'date'}).text
         sub_response = session.get(f'{MAIN_URL}{title['href']}')
         sub_soup = BeautifulSoup(sub_response.text, 'lxml')
-        sitting_text = await parse_sitting(sub_soup)
+        sitting_text = parse_sitting(sub_soup)
         if data['keyword'] in sitting_text:
             desired_data.append(
                 [f'{date} {title.text} – {MAIN_URL}{title['href']}']
@@ -167,7 +167,7 @@ async def parse_texts_with_person(data: Dict,
     return desired_data
 
 
-async def parse_headers_without_person(
+def parse_headers_without_person(
                             data: Dict,
                             commons_sittings: Any,
                             lords_sittings: Any,
@@ -192,7 +192,7 @@ async def parse_headers_without_person(
     return desired_data
 
 
-async def parse_texts_without_person(
+def parse_texts_without_person(
                             data: Dict,
                             commons_sittings: Any,
                             lords_sittings: Any,
@@ -206,7 +206,7 @@ async def parse_texts_without_person(
     for sitting in commons_sittings:
         response = session.get(f'{MAIN_URL}{sitting['href']}')
         soup = BeautifulSoup(response.text, 'lxml')
-        sitting_text = await parse_sitting(soup)
+        sitting_text = parse_sitting(soup)
         if data['keyword'] in sitting_text:
             desired_data.append(
                 [f'{year}.{month}.{day} {sitting.text} – '
@@ -215,7 +215,7 @@ async def parse_texts_without_person(
     for sitting in lords_sittings:
         response = session.get(f'{MAIN_URL}{sitting['href']}')
         soup = BeautifulSoup(response.text, 'lxml')
-        sitting_text = await parse_sitting(soup)
+        sitting_text = parse_sitting(soup)
         if data['keyword'] in sitting_text:
             desired_data.append(
                 [f'{year}.{month}.{day} {sitting.text} – '
@@ -224,7 +224,7 @@ async def parse_texts_without_person(
     return desired_data
 
 
-async def parse_sitting(sub_soup):
+def parse_sitting(sub_soup):
     sitting_text = ''
     sitting_text_tags = sub_soup.find_all(
             'div',

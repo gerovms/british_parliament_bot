@@ -188,8 +188,8 @@ async def parse_and_send(message: Message, parsed_data, filename):
 
 async def background_parse(message: Message, data: dict):
     """
-    Фоновый парсинг для асинхронной функции parsing_fork
+    Запускает синхронный парсер в отдельном потоке и отправляет результат пользователю.
     """
-    result, filename = await p.parsing_fork(data)
-    
+    loop = asyncio.get_event_loop()
+    result, filename = await loop.run_in_executor(None, p.parsing_fork, data)
     await parse_and_send(message, result, filename)
