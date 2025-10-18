@@ -14,6 +14,10 @@ async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
     list_of_mps_url = PERSON + surname[0].lower()
     async with httpx.AsyncClient() as client:
         page = await fetch_page(client, list_of_mps_url)
+    if page is None:
+        logging.warning(f'Страница {list_of_mps_url} '
+                        'не получена, пропускаем')
+        return []
     soup = BeautifulSoup(page, 'lxml')
     list_of_mps = soup.find_all('li', {'class': 'person'})
     list_of_desired_mps: List[List] = [[]]
@@ -202,7 +206,7 @@ async def parse_texts_with_person(data: Dict,
         title = contribution.find('a')
         date = contribution.find('span', {'class': 'date'}).text
         sub_page = await fetch_page(client, f'{MAIN_URL}{title["href"]}')
-        if page is None:
+        if sub_page is None:
             logging.warning(f'Страница {MAIN_URL}{title["href"]} '
                             'не получена, пропускаем')
             continue
