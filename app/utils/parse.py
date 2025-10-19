@@ -44,6 +44,7 @@ async def fetch_page(client: httpx.AsyncClient, url: str) -> str | None:
     Возвращает None, если страница недоступна (404) или ошибка сети.
     """
     try:
+        url = url.split('#')[0]
         row = await get_document(url)
         if not row:
             response = await client.get(url, timeout=30.0, follow_redirects=True)

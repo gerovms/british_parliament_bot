@@ -185,7 +185,7 @@ async def parse_and_send(message: Message, parsed_data, filename):
         return
 
     document = FSInputFile(file_path, filename=filename)
-    
+
     await message.answer_document(document,
                                   caption="Вот твой файл с результатами 📄",
                                   reply_markup=kb.to_main)
