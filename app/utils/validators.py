@@ -1,6 +1,6 @@
 import re
 
-from .constants import FINISH_DATE, START_DATE
+from .constants import DATE_RANGE, FINISH_DATE, START_DATE
 
 
 async def validate_date(from_date: str, to_date: str):
@@ -14,4 +14,4 @@ async def validate_date(from_date: str, to_date: str):
 
 async def validate_no_person_date(from_date: str, to_date: str, person: bool):
     return ((from_date != '0' and to_date != '0' and
-             (int(to_date) - int(from_date) <= 11)) or person)
+             (int(to_date) - int(from_date) <= DATE_RANGE)) or person)

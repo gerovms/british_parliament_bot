@@ -12,3 +12,4 @@ MONTHS = ['jan', 'feb',
           'nov', 'dec']
 FIRST_MONTH_DAY = 1
 LAST_MONTH_DAY = 31
+DATE_RANGE=1
