@@ -11,10 +11,7 @@ from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
                         ITEMS_PER_PAGE, LAST_MONTH_DAY,
                         MAIN_URL, MONTHS, PERSON)
 from ..db.db import get_document, save_document
-from ...run import Bot, TOKEN
-
-
-bot = Bot(token=TOKEN)
+from ...run import send_error_message
 
 
 async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
@@ -75,9 +72,7 @@ async def fetch_page(
             if attempt < retries - 1:
                 await asyncio.sleep(DELAY_TIME)
             else:
-                await bot.send_message(data['chat_id'],
-                                       text=('Произошла ошибка:( '
-                                             'Повторите запрос'))
+                await send_error_message(data['chat_id'])
                 raise
 
 

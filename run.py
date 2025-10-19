@@ -43,6 +43,12 @@ async def cleanup_results_folder():
         await asyncio.sleep(24 * 60 * 60)
 
 
+async def send_error_message(chat_id):
+    bot = Bot(token=TOKEN)
+    bot.send_message(chat_id, text=('Произошла ошибка:( '
+                                    'Повторите запрос'))
+
+
 async def main() -> None:
     await init_db()
     bot = Bot(token=TOKEN)
