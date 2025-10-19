@@ -99,7 +99,7 @@ async def back_to_menu_handler(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-router.callback_query(F.data == 'writings')
+@router.callback_query(F.data == 'writings')
 async def writings_choose_searching_way(callback: CallbackQuery,
                                         state: FSMContext):
     keyboard = await kb.build_searching_ways_keyboard(person=False)
