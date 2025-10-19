@@ -24,21 +24,25 @@ async def init_db():
     await conn.close()
 
 
-async def save_get_document(url: str, content: str):
+async def save_document(url: str, content: str):
     conn = await get_conn()
     try:
-        row = await conn.fetchrow(
-            "SELECT content FROM documents WHERE url = $1",
-            url
-        )
-        if row:
-            return row['content']
-        else:
-            await conn.execute(
-                "INSERT INTO documents (url, content) VALUES ($1, $2)",
-                url,
-                content
-                )
-            return content
+        await conn.execute(
+            "INSERT INTO documents (url, content) VALUES ($1, $2)",
+            url,
+            content
+            )
     finally:
         await conn.close()
+
+
+async def get_document(url: str):
+    conn = await get_conn()
+    row = await conn.fetchrow(
+        "SELECT content FROM documents WHERE url = $1",
+        url
+    )
+    if row is not None:
+        return row['content']
+    else:
+        return False

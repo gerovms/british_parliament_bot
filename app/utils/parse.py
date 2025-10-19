@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from .constants import (BASE_NO_PESON_URL, FIRST_MONTH_DAY,
                         ITEMS_PER_PAGE, LAST_MONTH_DAY,
                         MAIN_URL, MONTHS, PERSON)
-from ..db.db import save_get_document
+from ..db.db import get_document, save_document
 
 
 async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
@@ -44,9 +44,12 @@ async def fetch_page(client: httpx.AsyncClient, url: str) -> str | None:
     Возвращает None, если страница недоступна (404) или ошибка сети.
     """
     try:
-        response = await client.get(url, timeout=30.0, follow_redirects=True)
-        response.raise_for_status()
-        row = await save_get_document(url=url, content=response.text)
+        row = await get_document(url)
+        if not row:
+            response = await client.get(url, timeout=30.0, follow_redirects=True)
+            response.raise_for_status()
+            await save_document(url=url, content=response.text)
+            row = response.text
         return row
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 404:
