@@ -1,18 +1,25 @@
 import asyncio
-import itertools
 import gc
+import itertools
 import logging
+import os
+from pathlib import Path
 from typing import Dict, List
 
 import httpx
 from aiogram import Bot
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 
-from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
-                        ITEMS_PER_PAGE, LAST_MONTH_DAY,
-                        MAIN_URL, MONTHS, PERSON)
 from ..db.db import get_document, save_document
-from run import TOKEN
+from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
+                        ITEMS_PER_PAGE, LAST_MONTH_DAY, MAIN_URL, MONTHS,
+                        PERSON)
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent  # utils → app → корень
+load_dotenv(dotenv_path=BASE_DIR / ".env")
+TOKEN = os.getenv("TOKEN")
 
 
 async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
