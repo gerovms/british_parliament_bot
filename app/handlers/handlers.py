@@ -103,7 +103,8 @@ async def back_to_menu_handler(callback: CallbackQuery, state: FSMContext):
 async def writings_choose_searching_way(callback: CallbackQuery,
                                         state: FSMContext):
     keyboard = await kb.build_searching_ways_keyboard(person=False)
-    state.update_data(writings=True)
+    await state.update_data(writings=True)
+    await callback.message.edit_reply_markup(reply_markup=None)
     await callback.message.answer(
         text=m.CHOOSE_WAY_MESSAGE,
         reply_markup=keyboard
