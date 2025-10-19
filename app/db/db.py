@@ -32,7 +32,7 @@ async def save_get_document(url: str, content: str):
             url
         )
         if row:
-            return row
+            return row['content']
         else:
             await conn.execute(
                 "INSERT INTO documents (url, content) VALUES ($1, $2)",
