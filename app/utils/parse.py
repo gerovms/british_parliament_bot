@@ -1,3 +1,4 @@
+import itertools
 import gc
 import logging
 from typing import Any, Dict, List
@@ -103,7 +104,7 @@ async def parsing_fork(data: Dict):
                                 link_to_year,
                                 client
                                 )
-        elif 'person_info' not in data.keys():
+        elif 'person_info' not in data.keys() and 'writings' not in data.keys():
             for year in range(int(data['from_date']), int(data['to_date']) + 1):
                 for month in MONTHS:
                     for day in range(FIRST_MONTH_DAY, LAST_MONTH_DAY + 1):
@@ -127,12 +128,13 @@ async def parsing_fork(data: Dict):
                         else:
                             lords_sittings = []
                         del soup
+                        commons_lords = list(itertools.chain(commons_sittings,
+                                                             lords_sittings))
                         gc.collect()
                         if data['way'] == 'in_headers':
                             result += await parse_headers_without_person(
                                 data,
-                                commons_sittings,
-                                lords_sittings,
+                                commons_lords,
                                 year,
                                 month,
                                 day
@@ -140,14 +142,62 @@ async def parsing_fork(data: Dict):
                         elif data['way'] == 'in_texts':
                             result += await parse_texts_without_person(
                                 data,
-                                commons_sittings,
-                                lords_sittings,
+                                commons_lords,
                                 year,
                                 month,
                                 day,
                                 client
                                 )
-
+        elif 'writings' in data.keys():
+            for year in range(int(data['from_date']), int(data['to_date']) + 1):
+                for month in MONTHS:
+                    for day in range(FIRST_MONTH_DAY, LAST_MONTH_DAY + 1):
+                        link_to_day = f'{BASE_NO_PESON_URL}{year}/{month}/{day}'
+                        page = await fetch_page(client, link_to_day)
+                        if page is None:
+                            logging.warning(f'Страница {link_to_day} '
+                                            'не получена, пропускаем')
+                            continue
+                        soup = BeautifulSoup(page, 'lxml')
+                        commons_tag = soup.find(
+                            'h3',
+                            {'id': 'commons_written_answers'}
+                            )
+                        if commons_tag:
+                            ol_tag = commons_tag.find_next_sibling()
+                            commons_answers = ol_tag.find_all('a')
+                        else:
+                            commons_answers = []
+                        lords_tag = soup.find(
+                            'h3',
+                            {'id': 'lords_written_answers'}
+                            )
+                        if lords_tag:
+                            ol_tag = lords_tag.find_next_sibling()
+                            lords_answers = lords_tag.find_all('a')
+                        else:
+                            lords_answers = []
+                        del soup
+                        gc.collect()
+                        commons_lords = list(itertools.chain(commons_answers,
+                                                             lords_answers))
+                        if data['way'] == 'in_headers':
+                            result += await parse_headers_without_person(
+                                data,
+                                commons_lords,
+                                year,
+                                month,
+                                day
+                                )
+                        elif data['way'] == 'in_texts':
+                            result += await parse_texts_without_person(
+                                data,
+                                commons_lords,
+                                year,
+                                month,
+                                day,
+                                client
+                                )
         else:
             raise Exception
     count_result = 0
@@ -157,6 +207,10 @@ async def parsing_fork(data: Dict):
     if 'person_info' in data.keys():
         name = ' '.join(data['person_info'].split('-')).title()
         result[0][0] += f'; по персоне {name}'
+    elif 'writings' in data.keys():
+        result[0][0] += '; по письмам'
+    else:
+        result[0][0] += '; по заседаниям'
     if data['from_date'] != '0' and data['to_date'] != '0':
         result[0][0] += (f'; за период с {data['from_date']} '
                          f'по {data['to_date']}')
@@ -165,8 +219,11 @@ async def parsing_fork(data: Dict):
     if 'person_info' in data.keys():
         filename = (f'{data["person_info"]}.{data["keyword"]}.'
                     f'{data["from_date"]}.{data["to_date"]}.txt')
+    elif 'writings' in data.keys():
+        filename = (f'{data["keyword"]}.writings.'
+                    f'{data["from_date"]}.{data["to_date"]}.txt')
     else:
-        filename = (f'{data["keyword"]}.'
+        filename = (f'{data["keyword"]}.sittings.'
                     f'{data["from_date"]}.{data["to_date"]}.txt')
     gc.collect()
     return result, filename
@@ -227,33 +284,25 @@ async def parse_texts_with_person(data: Dict,
 
 async def parse_headers_without_person(
                             data: Dict,
-                            commons_sittings: Any,
-                            lords_sittings: Any,
+                            commons_lords: list,
                             year: int,
                             month: str,
                             day: int,
                             ):
     desired_data = []
     logging.info(f'Парсим {year}/{month}/{day}')
-    for sitting in commons_sittings:
-        if data['keyword'] in sitting.text.upper():
+    for item in commons_lords:
+        if data['keyword'] in item.text.upper():
             desired_data.append(
-                [f'{year}.{month}.{day} {sitting.text} – '
-                 f'{MAIN_URL}{sitting['href']}']
-                )
-    for sitting in lords_sittings:
-        if data['keyword'] in sitting.text.upper():
-            desired_data.append(
-                [f'{year}.{month}.{day} {sitting.text} – '
-                 f'{MAIN_URL}{sitting['href']}']
+                [f'{year}.{month}.{day} {item.text} – '
+                 f'{MAIN_URL}{item['href']}']
                 )
     return desired_data
 
 
 async def parse_texts_without_person(
                             data: Dict,
-                            commons_sittings: Any,
-                            lords_sittings: Any,
+                            commons_lords: List,
                             year: int,
                             month: str,
                             day: int,
@@ -261,35 +310,20 @@ async def parse_texts_without_person(
                             ):
     desired_data = []
     logging.info(f'Парсим {year}/{month}/{day}')
-    for sitting in commons_sittings:
-        page = await fetch_page(client, f'{MAIN_URL}{sitting["href"]}')
+    for item in commons_lords:
+        page = await fetch_page(client, f'{MAIN_URL}{item["href"]}')
         if page is None:
-            logging.warning(f'Страница {MAIN_URL}{sitting["href"]} '
+            logging.warning(f'Страница {MAIN_URL}{item["href"]} '
                             'не получена, пропускаем')
             continue
         soup = BeautifulSoup(page, 'lxml')
-        sitting_text = await parse_sitting(soup)
+        item_text = await parse_sitting(soup)
         del soup
         gc.collect()
-        if data['keyword'] in sitting_text:
+        if data['keyword'] in item_text:
             desired_data.append(
-                [f'{year}.{month}.{day} {sitting.text} – '
-                 f'{MAIN_URL}{sitting['href']}']
-                )
-    for sitting in lords_sittings:
-        page = await fetch_page(client, f'{MAIN_URL}{sitting["href"]}')
-        if page is None:
-            logging.warning(f'Страница {MAIN_URL}{sitting["href"]} '
-                            'не получена, пропускаем')
-            continue
-        soup = BeautifulSoup(page, 'lxml')
-        sitting_text = await parse_sitting(soup)
-        del soup
-        gc.collect()
-        if data['keyword'] in sitting_text:
-            desired_data.append(
-                [f'{year}.{month}.{day} {sitting.text} – '
-                 f'{MAIN_URL}{sitting['href']}']
+                [f'{year}.{month}.{day} {item.text} – '
+                 f'{MAIN_URL}{item['href']}']
                 )
     return desired_data
 

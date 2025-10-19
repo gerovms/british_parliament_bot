@@ -8,7 +8,8 @@ async def validate_date(from_date: str, to_date: str):
              bool(re.fullmatch(r"[+-]?\d+", to_date.strip()))
              ) and
             (int(from_date) >= START_DATE and
-            int(to_date) <= FINISH_DATE) or
+            int(to_date) <= FINISH_DATE) and
+            (from_date <= to_date) or
             (from_date == '0' and to_date == '0'))
 
 

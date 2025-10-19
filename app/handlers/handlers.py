@@ -99,6 +99,18 @@ async def back_to_menu_handler(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
+router.callback_query(F.data == 'writings')
+async def writings_choose_searching_way(callback: CallbackQuery,
+                                        state: FSMContext):
+    keyboard = await kb.build_searching_ways_keyboard(person=False)
+    state.update_data(writings=True)
+    await callback.message.answer(
+        text=m.CHOOSE_WAY_MESSAGE,
+        reply_markup=keyboard
+    )
+    await callback.answer()
+
+
 @router.callback_query(F.data.startswith('mp_'))
 async def choose_searching_way(callback: CallbackQuery, state: FSMContext):
     await state.clear()
@@ -175,6 +187,7 @@ async def pre_parsing(message: Message, state: FSMContext):
                 reply_markup=kb.to_main
             )
         await type_from_date(data['keyword'], state)
+
 
 
 async def parse_and_send(message: Message, parsed_data, filename):

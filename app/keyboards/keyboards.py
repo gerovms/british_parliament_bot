@@ -8,7 +8,11 @@ main = InlineKeyboardMarkup(inline_keyboard=[
                              callback_data='persons'),
         InlineKeyboardButton(text='По всем заседаниям',
                              callback_data='among_all')
-        ]
+        ],
+        [
+            InlineKeyboardButton(text='По ответам на письма',
+                                 callback_data='writings')
+                                 ]
         ]
         )
 
@@ -21,7 +25,7 @@ to_main = InlineKeyboardMarkup(
 async def build_searching_ways_keyboard(person: bool) -> InlineKeyboardMarkup:
     keyboard = [
         [
-            InlineKeyboardButton(text='В обсуждениях',
+            InlineKeyboardButton(text='В тексте',
                                  callback_data='in_texts'),
             InlineKeyboardButton(text='В заголовках',
                                  callback_data='in_headers')
