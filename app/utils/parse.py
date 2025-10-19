@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import gc
 import logging
@@ -6,10 +7,14 @@ from typing import Any, Dict, List
 import httpx
 from bs4 import BeautifulSoup
 
-from .constants import (BASE_NO_PESON_URL, FIRST_MONTH_DAY,
+from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
                         ITEMS_PER_PAGE, LAST_MONTH_DAY,
                         MAIN_URL, MONTHS, PERSON)
 from ..db.db import get_document, save_document
+from ...run import Bot, TOKEN
+
+
+bot = Bot(token=TOKEN)
 
 
 async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
@@ -39,26 +44,41 @@ async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
     return list_of_desired_mps
 
 
-async def fetch_page(client: httpx.AsyncClient, url: str) -> str | None:
+async def fetch_page(
+        client: httpx.AsyncClient, url: str, data: Dict = None
+        ) -> str | None:
     """
     Асинхронная загрузка страницы.
     Возвращает None, если страница недоступна (404) или ошибка сети.
     """
-    try:
-        url = url.split('#')[0]
-        row = await get_document(url)
-        if not row:
-            response = await client.get(url, timeout=30.0, follow_redirects=True)
-            response.raise_for_status()
-            await save_document(url=url, content=response.text)
-            row = response.text
-        return row
-    except httpx.HTTPStatusError as e:
-        if e.response.status_code == 404:
-            logging.warning(f'404 Not Found: {url}, пропускаем')
-            return None
-        else:
-            return None
+    retries = 3
+    for attempt in range(retries):
+        try:
+            url = url.split('#')[0]
+            row = await get_document(url)
+            if not row:
+                response = await client.get(
+                    url, timeout=30.0, follow_redirects=True
+                    )
+                response.raise_for_status()
+                await save_document(url=url, content=response.text)
+                row = response.text
+            return row
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                logging.warning(f'404 Not Found: {url}, пропускаем')
+                return None
+            else:
+                return None
+        except (httpx.ConnectError, httpx.ReadTimeout) as e:
+            logging.error(f"Сетевая ошибка {e} при запросе {url}")
+            if attempt < retries - 1:
+                await asyncio.sleep(DELAY_TIME)
+            else:
+                await bot.send_message(data['chat_id'],
+                                       text=('Произошла ошибка:( '
+                                             'Повторите запрос'))
+                raise
 
 
 async def parsing_fork(data: Dict):
@@ -66,7 +86,8 @@ async def parsing_fork(data: Dict):
     logging.info(f'Начинаем парсить по {data}')
     async with httpx.AsyncClient() as client:
         if 'person_info' in data.keys():
-            page = await fetch_page(client, f'{PERSON}{data["person_info"]}')
+            page = await fetch_page(
+                client, f'{PERSON}{data["person_info"]}', data)
             primordial_soup = BeautifulSoup(page, 'lxml')
             years = primordial_soup.find_all('span', {'class':
                                                       'speeches-by-year'})
@@ -109,7 +130,7 @@ async def parsing_fork(data: Dict):
                 for month in MONTHS:
                     for day in range(FIRST_MONTH_DAY, LAST_MONTH_DAY + 1):
                         link_to_day = f'{BASE_NO_PESON_URL}{year}/{month}/{day}'
-                        page = await fetch_page(client, link_to_day)
+                        page = await fetch_page(client, link_to_day, data)
                         if page is None:
                             logging.warning(f'Страница {link_to_day} '
                                             'не получена, пропускаем')
@@ -153,7 +174,7 @@ async def parsing_fork(data: Dict):
                 for month in MONTHS:
                     for day in range(FIRST_MONTH_DAY, LAST_MONTH_DAY + 1):
                         link_to_day = f'{BASE_NO_PESON_URL}{year}/{month}/{day}'
-                        page = await fetch_page(client, link_to_day)
+                        page = await fetch_page(client, link_to_day, data)
                         if page is None:
                             logging.warning(f'Страница {link_to_day} '
                                             'не получена, пропускаем')
@@ -233,7 +254,7 @@ async def parse_headers_with_person(data: Dict,
                                     link_to_year: str,
                                     client: httpx.AsyncClient):
     desired_data = []
-    page = await fetch_page(client, link_to_year)
+    page = await fetch_page(client, link_to_year, data)
     if page is None:
         logging.warning(f'Страница {link_to_year} '
                         'не получена, пропускаем')
@@ -256,7 +277,7 @@ async def parse_texts_with_person(data: Dict,
                                   link_to_year: str,
                                   client: httpx.AsyncClient):
     desired_data = []
-    page = await fetch_page(client, link_to_year)
+    page = await fetch_page(client, link_to_year, data)
     if page is None:
         logging.warning(f'Страница {link_to_year} '
                         'не получена, пропускаем')
@@ -268,7 +289,7 @@ async def parse_texts_with_person(data: Dict,
     for contribution in contributions:
         title = contribution.find('a')
         date = contribution.find('span', {'class': 'date'}).text
-        sub_page = await fetch_page(client, f'{MAIN_URL}{title["href"]}')
+        sub_page = await fetch_page(client, f'{MAIN_URL}{title["href"]}', data)
         if sub_page is None:
             logging.warning(f'Страница {MAIN_URL}{title["href"]} '
                             'не получена, пропускаем')
@@ -311,7 +332,7 @@ async def parse_texts_without_person(
     desired_data = []
     logging.info(f'Парсим {year}/{month}/{day}')
     for item in commons_lords:
-        page = await fetch_page(client, f'{MAIN_URL}{item["href"]}')
+        page = await fetch_page(client, f'{MAIN_URL}{item["href"]}', data)
         if page is None:
             logging.warning(f'Страница {MAIN_URL}{item["href"]} '
                             'не получена, пропускаем')
