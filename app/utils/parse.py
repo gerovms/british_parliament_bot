@@ -83,11 +83,11 @@ async def fetch_page(
                 bot = Bot(token=TOKEN)
                 await bot.send_message(data['chat_id'], text=(
                     'Произошла ошибка:( '
-                    'Повторите запрос')
+                    'Повторите запрос'),
                     )
-
-                raise
-
+                raise Exception
+    return None
+            
 
 async def parsing_fork(data: Dict):
     result = [[f'По ключевому слову "{data["keyword"]}" найдено объектов: ']]
