@@ -11,7 +11,7 @@ from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
                         ITEMS_PER_PAGE, LAST_MONTH_DAY,
                         MAIN_URL, MONTHS, PERSON)
 from ..db.db import get_document, save_document
-from ...run import send_error_message
+from run import send_error_message
 
 
 async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
