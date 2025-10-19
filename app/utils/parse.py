@@ -2,16 +2,17 @@ import asyncio
 import itertools
 import gc
 import logging
-from typing import Any, Dict, List
+from typing import Dict, List
 
 import httpx
+from aiogram import Bot
 from bs4 import BeautifulSoup
 
 from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
                         ITEMS_PER_PAGE, LAST_MONTH_DAY,
                         MAIN_URL, MONTHS, PERSON)
 from ..db.db import get_document, save_document
-from run import send_error_message
+from run import TOKEN
 
 
 async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
@@ -72,7 +73,12 @@ async def fetch_page(
             if attempt < retries - 1:
                 await asyncio.sleep(DELAY_TIME)
             else:
-                await send_error_message(data['chat_id'])
+                bot = Bot(token=TOKEN)
+                await bot.send_message(data['chat_id'], text=(
+                    'Произошла ошибка:( '
+                    'Повторите запрос')
+                    )
+
                 raise
 
 

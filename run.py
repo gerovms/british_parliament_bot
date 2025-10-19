@@ -39,14 +39,7 @@ async def cleanup_results_folder():
                         print(f"[{datetime.now()}] Удалён файл: {filename}")
                 except Exception as e:
                     print(f"[{datetime.now()}] Ошибка при удалении {filename}: {e}")
-        # Ждём 24 часа
         await asyncio.sleep(24 * 60 * 60)
-
-
-async def send_error_message(chat_id):
-    bot = Bot(token=TOKEN)
-    bot.send_message(chat_id, text=('Произошла ошибка:( '
-                                    'Повторите запрос'))
 
 
 async def main() -> None:
