@@ -19,7 +19,7 @@ British Parliament Bot — это Telegram-бот, который помогае
 
 🧰 Стек технологий
 
-Python 3.12+
+• Python 3.12+
 
 • Asiogram
  — для работы с Telegram API
