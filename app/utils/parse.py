@@ -56,6 +56,7 @@ async def fetch_page(
     Асинхронная загрузка страницы.
     Возвращает None, если страница недоступна (404) или ошибка сети.
     """
+    logging.info(f'Парсим {url}')
     retries = 3
     for attempt in range(retries):
         try:
