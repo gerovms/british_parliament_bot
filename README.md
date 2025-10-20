@@ -30,17 +30,17 @@ British Parliament Bot — это Telegram-бот, который помогае
 
 🚀 Установка и запуск
 Вариант A — через Docker (рекомендуется)
-<pre markdown> ```
+<pre markdown>
 git clone https://github.com/gerovms/british_parliament_bot.git
 cd british_parliament_bot
 docker-compose up --build
-``` </pre>
+</pre>
 
 После сборки контейнеров бот автоматически запустится.
 
 Вариант B — Локально
 
-<pre markdown> ```
+<pre markdown>
 git clone https://github.com/gerovms/british_parliament_bot.git
 cd british_parliament_bot
 
@@ -51,7 +51,7 @@ source .venv/bin/activate   # macOS / Linux
 
 pip install -r requirements.txt
 python run.py
-``` </pre>
+</pre>
 
 ⚙️ Переменные окружения
 
@@ -67,6 +67,6 @@ POSTGRES_DB=
 
 DATABASE_URL=
 
-Релизация бота в телеграме: @UK_Parliament_bot
+Реализация бота в телеграме: @UK_Parliament_bot
 
 Прошу не заказывать сразу несколько наборов данных, временно депой был выполнен на слабый сервер.
