@@ -75,15 +75,17 @@ async def fetch_page(
                 return None
             else:
                 return None
-        except (httpx.ConnectError, httpx.ReadTimeout) as e:
+        except (httpx.HTTPError, httpx.StreamError) as e:
             logging.error(f"Сетевая ошибка {e} при запросе {url}")
             if attempt < retries - 1:
                 await asyncio.sleep(DELAY_TIME)
             else:
                 bot = Bot(token=TOKEN)
                 await bot.send_message(data['chat_id'], text=(
-                    'Произошла ошибка:( '
-                    'Повторите запрос'),
+                    'Произошла ошибка при запросе: '
+                    f'{data['from_date']}, {data['to_date']}, '
+                    f'{data['keyword']}\n\n'
+                    'Повторите попытку.'),
                     )
                 raise Exception
     return None
@@ -140,8 +142,6 @@ async def parsing_fork(data: Dict):
                         link_to_day = f'{BASE_NO_PESON_URL}{year}/{month}/{day}'
                         page = await fetch_page(client, link_to_day, data)
                         if page is None:
-                            logging.warning(f'Страница {link_to_day} '
-                                            'не получена, пропускаем')
                             continue
                         soup = BeautifulSoup(page, 'lxml')
                         commons_tag = soup.find('h3', {'id': 'commons'})
@@ -184,8 +184,6 @@ async def parsing_fork(data: Dict):
                         link_to_day = f'{BASE_NO_PESON_URL}{year}/{month}/{day}'
                         page = await fetch_page(client, link_to_day, data)
                         if page is None:
-                            logging.warning(f'Страница {link_to_day} '
-                                            'не получена, пропускаем')
                             continue
                         soup = BeautifulSoup(page, 'lxml')
                         commons_tag = soup.find(
@@ -264,8 +262,6 @@ async def parse_headers_with_person(data: Dict,
     desired_data = []
     page = await fetch_page(client, link_to_year, data)
     if page is None:
-        logging.warning(f'Страница {link_to_year} '
-                        'не получена, пропускаем')
         return desired_data
     soup = BeautifulSoup(page, 'lxml')
     contributions = soup.find_all('p', {'class': 'person-contribution'})
@@ -287,8 +283,6 @@ async def parse_texts_with_person(data: Dict,
     desired_data = []
     page = await fetch_page(client, link_to_year, data)
     if page is None:
-        logging.warning(f'Страница {link_to_year} '
-                        'не получена, пропускаем')
         return desired_data 
     soup = BeautifulSoup(page, 'lxml')
     contributions = soup.find_all('p', {'class': 'person-contribution'})
@@ -299,8 +293,6 @@ async def parse_texts_with_person(data: Dict,
         date = contribution.find('span', {'class': 'date'}).text
         sub_page = await fetch_page(client, f'{MAIN_URL}{title["href"]}', data)
         if sub_page is None:
-            logging.warning(f'Страница {MAIN_URL}{title["href"]} '
-                            'не получена, пропускаем')
             continue
         sub_soup = BeautifulSoup(sub_page, 'lxml')
         sitting_text = await parse_sitting(sub_soup)
@@ -342,8 +334,6 @@ async def parse_texts_without_person(
     for item in commons_lords:
         page = await fetch_page(client, f'{MAIN_URL}{item["href"]}', data)
         if page is None:
-            logging.warning(f'Страница {MAIN_URL}{item["href"]} '
-                            'не получена, пропускаем')
             continue
         soup = BeautifulSoup(page, 'lxml')
         item_text = await parse_sitting(soup)
