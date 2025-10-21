@@ -84,7 +84,7 @@ async def change_page(callback: CallbackQuery, state: FSMContext):
     page = int(callback.data.split(':')[1])
     data = await state.get_data()
     mps = data.get("mps")
-    if mps:
+    if len(mps[0]) != 0:
         await callback.message.edit_text(
             text=await m.build_persons_message(mps=mps, page=page),
             parse_mode='HTML',
