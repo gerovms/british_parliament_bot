@@ -22,10 +22,11 @@ load_dotenv(dotenv_path=BASE_DIR / ".env")
 TOKEN = os.getenv("TOKEN")
 
 
-async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
+async def get_list_of_mps(surname: str,
+                          data: Dict) -> List[List[List[str]]] | str:
     list_of_mps_url = PERSON + surname[0].lower()
     async with httpx.AsyncClient() as client:
-        page = await fetch_page(client, list_of_mps_url)
+        page = await fetch_page(client, list_of_mps_url, data)
     if page is None:
         logging.warning(f'Страница {list_of_mps_url} '
                         'не получена, пропускаем')
