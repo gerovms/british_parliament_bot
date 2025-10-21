@@ -66,8 +66,7 @@ async def list_of_mps(message: Message, state: FSMContext):
     mps = await p.get_list_of_mps(data['surname'], data)
     if not mps[0]:
         await message.answer(
-            m.SURNAME_ERROR,
-            reply_markup=kb.to_main
+            m.SURNAME_ERROR
             )
         await ask_for_surname(message, state)
     else:
