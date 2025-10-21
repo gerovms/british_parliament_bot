@@ -168,6 +168,7 @@ async def type_to_date(message: Message, state: FSMContext):
 async def pre_parsing(message: Message, state: FSMContext):
     await state.update_data(to_date=message.text)
     await state.update_data(chat_id=message.chat.id)
+    await state.update_data(user_first_name=message.from_user.first_name)
     logging.info(f'{message.from_user.first_name} '
                  f'ввёл кон. дату {message.text}')
     data = await state.get_data()
