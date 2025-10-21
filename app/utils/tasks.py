@@ -1,6 +1,6 @@
 import asyncio
 
-from ...celery_settings import celery_app
+from celery_settings import celery_app
 
 from ..utils import parse as p
 
