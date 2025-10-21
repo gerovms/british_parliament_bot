@@ -104,9 +104,9 @@ async def parsing_fork(data: Dict):
     logging.info(f'Начинаем парсить по {data}')
     async with httpx.AsyncClient() as client:
         if 'person_info' in data.keys():
-            result = await person_parsing(data, client, result)
+            result.append(await person_parsing(data, client, result))
         else:
-            result = await no_person_parsing(data, client, result)
+            result.append(await no_person_parsing(data, client, result))
     return await setting_file_headers(result, data)
 
 
