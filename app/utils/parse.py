@@ -154,7 +154,7 @@ async def parsing_fork(data: Dict):
                         lords_tag = soup.find('h3', {'id': 'lords'})
                         if lords_tag:
                             ol_tag = lords_tag.find_next_sibling()
-                            lords_sittings = lords_tag.find_all('a')
+                            lords_sittings = ol_tag.find_all('a')
                         else:
                             lords_sittings = []
                         del soup

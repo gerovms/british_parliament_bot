@@ -4,11 +4,12 @@ import os
 from datetime import datetime
 from os import getenv
 
+import httpx
 from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 
-from app.handlers import router
 from app.db.db import init_db
+from app.handlers import router
 
 load_dotenv()
 
@@ -18,7 +19,8 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
-
+logging.getLogger("httpx").disabled = True
+logging.getLogger("httpcore").disabled = True
 
 RESULTS_DIR = os.path.join(os.getcwd(), "results")
 os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -36,9 +38,11 @@ async def cleanup_results_folder():
                 try:
                     if os.path.isfile(file_path):
                         os.remove(file_path)
-                        print(f"[{datetime.now()}] Удалён файл: {filename}")
+                        logging.info(f"[{datetime.now()}] Удалён файл: "
+                                     f"{filename}")
                 except Exception as e:
-                    print(f"[{datetime.now()}] Ошибка при удалении {filename}: {e}")
+                    logging.error(f"[{datetime.now()}] Ошибка при удалении "
+                                  f"{filename}: {e}")
         await asyncio.sleep(24 * 60 * 60)
 
 
@@ -53,11 +57,8 @@ async def main() -> None:
         await dp.start_polling(bot)
     finally:
         await bot.session.close()
-        print(f"[{datetime.now()}] Бот остановлен")
+        logging.info(f"[{datetime.now()}] Бот остановлен")
 
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print('Бот выключен вручную')
+    asyncio.run(main())
