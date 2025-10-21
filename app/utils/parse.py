@@ -145,6 +145,7 @@ async def person_parsing(data: Dict,
     years = primordial_soup.find_all('span', {'class': 'speeches-by-year'})
     del primordial_soup
     gc.collect()
+    result = []
     if years:
         if data['from_date'] == '0' and data['to_date'] == '0':
             for year in years:
