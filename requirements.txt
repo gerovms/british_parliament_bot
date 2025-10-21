@@ -5,6 +5,7 @@ beautifulsoup4
 httpx
 lxml
 python-dotenv
+redis
 requests-cache
 SQLAlchemy
 tqdm

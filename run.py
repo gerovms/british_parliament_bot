@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 
 from app.db.db import init_db
 from app.handlers import router
+from app.utils.parse import redis_client
+
 
 load_dotenv()
 
@@ -49,7 +51,7 @@ async def cleanup_results_folder():
 async def main() -> None:
     await init_db()
     bot = Bot(token=TOKEN)
-    print(f"[{datetime.now()}] Бот запущен")
+    logging.info(f"[{datetime.now()}] Бот запущен")
 
     asyncio.create_task(cleanup_results_folder())
 
@@ -57,6 +59,8 @@ async def main() -> None:
         await dp.start_polling(bot)
     finally:
         await bot.session.close()
+        await redis_client.close()
+        await redis_client.connection_pool.disconnect()
         logging.info(f"[{datetime.now()}] Бот остановлен")
 
 

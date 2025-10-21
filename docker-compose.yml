@@ -7,6 +7,7 @@ services:
       - ./.env
     depends_on:
       - db
+      - redis
     volumes:
       - ./results:/app/results
     networks:
@@ -24,8 +25,29 @@ services:
     networks:
       - bot_network
 
+  redis:
+    image: redis:7.2
+    restart: always
+    environment:
+      REDIS_MAXMEMORY: ${REDIS_MAXMEMORY}
+      REDIS_POLICY: ${REDIS_POLICY}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_DB: ${REDIS_DB}
+    command:
+      [
+        "redis-server",
+        "--port", "${REDIS_PORT}",
+        "--maxmemory", "${REDIS_MAXMEMORY}",
+        "--maxmemory-policy", "${REDIS_POLICY}"
+      ]
+    volumes:
+      - redis_data:/data
+    networks:
+      - bot_network
+
 volumes:
   db_data:
+  redis_data:
 
 networks:
   bot_network:

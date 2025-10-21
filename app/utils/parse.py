@@ -10,6 +10,7 @@ import httpx
 from aiogram import Bot
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+import redis.asyncio as aioredis
 
 from ..db.db import get_document, save_document
 from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
@@ -20,6 +21,11 @@ from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(dotenv_path=BASE_DIR / ".env")
 TOKEN = os.getenv("TOKEN")
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = int(os.getenv("REDIS_PORT"))
+REDIS_DB = int(os.getenv("REDIS_DB"))
+
+redis_client = aioredis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
 
 async def get_list_of_mps(surname: str,
@@ -58,6 +64,10 @@ async def fetch_page(
     Возвращает None, если страница недоступна (404) или ошибка сети.
     """
     logging.info(f'Парсим {url} для {data['user_first_name']}')
+    cached_page = await redis_client.get(url)
+    if cached_page:
+        logging.info(f"Страница {url} получена из Redis")
+        return cached_page.decode('utf-8')
     retries = 3
     for attempt in range(retries):
         try:
@@ -70,6 +80,7 @@ async def fetch_page(
                 response.raise_for_status()
                 await save_document(url=url, content=response.text)
                 row = response.text
+            await redis_client.set(url, row, ex=86400)
             return row
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
@@ -97,7 +108,7 @@ async def fetch_page(
                         )
                 raise Exception
     return None
-   
+
 
 async def parsing_fork(data: Dict):
     result = [[f'По ключевому слову "{data["keyword"]}" найдено объектов: ']]
