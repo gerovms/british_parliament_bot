@@ -15,7 +15,7 @@ import redis.asyncio as aioredis
 from ..db.db import get_document, save_document
 from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
                         ITEMS_PER_PAGE, LAST_MONTH_DAY, MAIN_URL, MONTHS,
-                        PERSON, REDIS_EX)
+                        PERSON)
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
