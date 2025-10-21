@@ -12,7 +12,6 @@ from ..messages import messages as m
 from ..states import states as s
 from ..utils import parse as p
 from ..utils import validators as v
-from ..utils import tasks as t
 from ..utils.making_file import save_parsed_data
 
 router = Router()
@@ -212,5 +211,5 @@ async def parse_and_send(message: Message, parsed_data, filename):
 
 
 async def background_parse(message: Message, data: dict):
-    result, filename = t.parsing_fork_task.delay(data).get()
+    result, filename = await p.parsing_fork(data)
     await parse_and_send(message, result, filename)
