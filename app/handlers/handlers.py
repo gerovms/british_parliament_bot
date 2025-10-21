@@ -56,6 +56,7 @@ async def redir_to_ways(callback: CallbackQuery, state: FSMContext):
 @router.message(s.SearchByName.surname)
 async def list_of_mps(message: Message, state: FSMContext):
     await state.update_data(surname=message.text)
+    await state.update_data(chat_id=message.chat.id)
     logging.info(f'{message.from_user.first_name} '
                  f'ввёл фамилию {message.text}')
     data = await state.get_data()

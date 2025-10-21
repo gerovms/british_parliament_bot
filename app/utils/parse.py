@@ -4,7 +4,7 @@ import itertools
 import logging
 import os
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import httpx
 from aiogram import Bot
@@ -17,7 +17,7 @@ from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
                         PERSON)
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent  # utils → app → корень
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(dotenv_path=BASE_DIR / ".env")
 TOKEN = os.getenv("TOKEN")
 
@@ -50,7 +50,7 @@ async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
 
 
 async def fetch_page(
-        client: httpx.AsyncClient, url: str, data: Dict = None
+        client: httpx.AsyncClient, url: str, data: Optional[Dict] = None
         ) -> str | None:
     """
     Асинхронная загрузка страницы.
@@ -82,12 +82,18 @@ async def fetch_page(
                 await asyncio.sleep(DELAY_TIME)
             else:
                 bot = Bot(token=TOKEN)
-                await bot.send_message(data['chat_id'], text=(
-                    'Произошла ошибка при запросе: '
-                    f'{data['from_date']}, {data['to_date']}, '
-                    f'{data['keyword']}\n\n'
-                    'Повторите попытку.'),
-                    )
+                if data and 'from_date' in data:
+                    await bot.send_message(data['chat_id'], text=(
+                        'Произошла ошибка при запросе: '
+                        f'{data['from_date']}, {data['to_date']}, '
+                        f'{data['keyword']}\n\n'
+                        'Повторите попытку.'),
+                        )
+                else:
+                    await bot.send_message(data['chat_id'], text=(
+                        'Произошла ошибка при запросе '
+                        'списка персон.'),
+                        )
                 raise Exception
     return None
             
@@ -136,98 +142,12 @@ async def parsing_fork(data: Dict):
                                 link_to_year,
                                 client
                                 )
-        elif 'person_info' not in data.keys() and 'writings' not in data.keys():
-            for year in range(int(data['from_date']), int(data['to_date']) + 1):
-                for month in MONTHS:
-                    for day in range(FIRST_MONTH_DAY, LAST_MONTH_DAY + 1):
-                        link_to_day = f'{BASE_NO_PESON_URL}{year}/{month}/{day}'
-                        page = await fetch_page(client, link_to_day, data)
-                        if page is None:
-                            continue
-                        soup = BeautifulSoup(page, 'lxml')
-                        commons_tag = soup.find('h3', {'id': 'commons'})
-                        if commons_tag:
-                            ol_tag = commons_tag.find_next_sibling()
-                            commons_sittings = ol_tag.find_all('a')
-                        else:
-                            commons_sittings = []
-                        lords_tag = soup.find('h3', {'id': 'lords'})
-                        if lords_tag:
-                            ol_tag = lords_tag.find_next_sibling()
-                            lords_sittings = ol_tag.find_all('a')
-                        else:
-                            lords_sittings = []
-                        del soup
-                        commons_lords = list(itertools.chain(commons_sittings,
-                                                             lords_sittings))
-                        gc.collect()
-                        if data['way'] == 'in_headers':
-                            result += await parse_headers_without_person(
-                                data,
-                                commons_lords,
-                                year,
-                                month,
-                                day
-                                )
-                        elif data['way'] == 'in_texts':
-                            result += await parse_texts_without_person(
-                                data,
-                                commons_lords,
-                                year,
-                                month,
-                                day,
-                                client
-                                )
-        elif 'writings' in data.keys():
-            for year in range(int(data['from_date']), int(data['to_date']) + 1):
-                for month in MONTHS:
-                    for day in range(FIRST_MONTH_DAY, LAST_MONTH_DAY + 1):
-                        link_to_day = f'{BASE_NO_PESON_URL}{year}/{month}/{day}'
-                        page = await fetch_page(client, link_to_day, data)
-                        if page is None:
-                            continue
-                        soup = BeautifulSoup(page, 'lxml')
-                        commons_tag = soup.find(
-                            'h3',
-                            {'id': 'commons_written_answers'}
-                            )
-                        if commons_tag:
-                            ol_tag = commons_tag.find_next_sibling()
-                            commons_answers = ol_tag.find_all('a')
-                        else:
-                            commons_answers = []
-                        lords_tag = soup.find(
-                            'h3',
-                            {'id': 'lords_written_answers'}
-                            )
-                        if lords_tag:
-                            ol_tag = lords_tag.find_next_sibling()
-                            lords_answers = lords_tag.find_all('a')
-                        else:
-                            lords_answers = []
-                        del soup
-                        gc.collect()
-                        commons_lords = list(itertools.chain(commons_answers,
-                                                             lords_answers))
-                        if data['way'] == 'in_headers':
-                            result += await parse_headers_without_person(
-                                data,
-                                commons_lords,
-                                year,
-                                month,
-                                day
-                                )
-                        elif data['way'] == 'in_texts':
-                            result += await parse_texts_without_person(
-                                data,
-                                commons_lords,
-                                year,
-                                month,
-                                day,
-                                client
-                                )
         else:
-            raise Exception
+            result = await no_person_parsing(data, client, result)
+    return setting_file_headers(result, data)
+
+
+async def setting_file_headers(result: List[List[str]], data: Dict):
     count_result = 0
     for item in range(1, len(result)):
         count_result += len(result[item])
@@ -255,6 +175,72 @@ async def parsing_fork(data: Dict):
                     f'{data["from_date"]}.{data["to_date"]}.txt')
     gc.collect()
     return result, filename
+
+
+
+
+async def no_person_parsing(data: Dict,
+                            client: httpx.AsyncClient,
+                            result: List[List[str]]):
+    for year in range(int(data['from_date']), int(data['to_date']) + 1):
+        for month in MONTHS:
+            for day in range(FIRST_MONTH_DAY, LAST_MONTH_DAY + 1):
+                link_to_day = f'{BASE_NO_PESON_URL}{year}/{month}/{day}'
+                page = await fetch_page(client, link_to_day, data)
+                if page is None:
+                    continue
+                soup = BeautifulSoup(page, 'lxml')
+                if 'writings' in data.keys():
+                    commons_tag = soup.find(
+                        'h3',
+                        {'id': 'commons_written_answers'}
+                        )
+                    lords_tag = soup.find(
+                        'h3',
+                        {'id': 'lords_written_answers'}
+                    )
+                else:
+                    commons_tag = soup.find(
+                        'h3',
+                        {'id': 'commons'}
+                        )
+                    lords_tag = soup.find(
+                        'h3',
+                        {'id': 'lords'}
+                    )
+                if commons_tag:
+                    ol_commons_tag = commons_tag.find_next_sibling()
+                    commons_answers = ol_commons_tag.find_all('a')
+                else:
+                    commons_answers = []
+                if lords_tag:
+                    ol_lords_tag = lords_tag.find_next_sibling()
+                    lords_answers = ol_lords_tag.find_all('a')
+                else:
+                    lords_answers = []
+                del soup
+                gc.collect()
+                commons_lords = list(itertools.chain(commons_answers,
+                                                     lords_answers))
+                if data['way'] == 'in_headers':
+                    result += await parse_headers_without_person(
+                        data,
+                        commons_lords,
+                        year,
+                        month,
+                        day
+                        )
+                elif data['way'] == 'in_texts':
+                    result += await parse_texts_without_person(
+                        data,
+                        commons_lords,
+                        year,
+                        month,
+                        day,
+                        client
+                        )
+    return result
+
 
 
 async def parse_headers_with_person(data: Dict,
