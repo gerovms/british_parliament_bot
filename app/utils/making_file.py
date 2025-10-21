@@ -10,6 +10,6 @@ async def save_parsed_data(parsed_data, filename):
 
     async with aiofiles.open(file_path, "w", encoding="utf-8") as f:
         for block in parsed_data:
-            await f.write("\n".join(block) + "\n\n")
+            await f.write("".join(block) + "\n\n")
     del parsed_data
     return file_path
