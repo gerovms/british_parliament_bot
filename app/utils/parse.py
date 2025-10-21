@@ -141,7 +141,7 @@ async def setting_file_headers(result: List[List[str]], data: Dict):
 
 
 async def person_parsing(data: Dict,
-                         client: httpx.AsyncClient):
+                         client: httpx.AsyncClient) -> List:
     result = []
     page = await fetch_page(client, f'{PERSON}{data["person_info"]}', data)
     primordial_soup = BeautifulSoup(page, 'lxml')
@@ -153,13 +153,13 @@ async def person_parsing(data: Dict,
             for year in years:
                 link_to_year = f'{MAIN_URL}{year.find('a')['href']}'
                 if data['way'] == 'in_headers':
-                    result = await parse_headers_with_person(
+                    result += await parse_headers_with_person(
                         data,
                         link_to_year,
                         client
                         )
                 elif data['way'] == 'in_texts':
-                    result = await parse_texts_with_person(
+                    result += await parse_texts_with_person(
                         data,
                         link_to_year,
                         client
@@ -169,13 +169,13 @@ async def person_parsing(data: Dict,
                               int(data['to_date']) + 1):
                 link_to_year = f'{PERSON}{data['person_info']}/{year}'
                 if data['way'] == 'in_headers':
-                    result = await parse_headers_with_person(
+                    result += await parse_headers_with_person(
                         data,
                         link_to_year,
                         client
                         )
                 elif data['way'] == 'in_texts':
-                    result = await parse_texts_with_person(
+                    result += await parse_texts_with_person(
                         data,
                         link_to_year,
                         client
@@ -184,7 +184,7 @@ async def person_parsing(data: Dict,
 
 
 async def no_person_parsing(data: Dict,
-                            client: httpx.AsyncClient):
+                            client: httpx.AsyncClient) -> List:
     result = []
     for year in range(int(data['from_date']), int(data['to_date']) + 1):
         for month in MONTHS:
@@ -227,7 +227,7 @@ async def no_person_parsing(data: Dict,
                 commons_lords = list(itertools.chain(commons_answers,
                                                      lords_answers))
                 if data['way'] == 'in_headers':
-                    result = await parse_headers_without_person(
+                    result += await parse_headers_without_person(
                         data,
                         commons_lords,
                         year,
@@ -235,7 +235,7 @@ async def no_person_parsing(data: Dict,
                         day
                         )
                 elif data['way'] == 'in_texts':
-                    result = await parse_texts_without_person(
+                    result += await parse_texts_without_person(
                         data,
                         commons_lords,
                         year,
@@ -250,7 +250,7 @@ async def no_person_parsing(data: Dict,
 async def parse_headers_with_person(data: Dict,
                                     link_to_year: str,
                                     client: httpx.AsyncClient):
-    desired_data = []
+    desired_data: List = []
     page = await fetch_page(client, link_to_year, data)
     if page is None:
         return desired_data
@@ -271,7 +271,7 @@ async def parse_headers_with_person(data: Dict,
 async def parse_texts_with_person(data: Dict,
                                   link_to_year: str,
                                   client: httpx.AsyncClient):
-    desired_data = []
+    desired_data: List = []
     page = await fetch_page(client, link_to_year, data)
     if page is None:
         return desired_data 
