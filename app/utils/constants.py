@@ -1,9 +1,9 @@
-PERSON = 'https://api.parliament.uk/historic-hansard/people/'
+PERSON = 'https://api.parliament.uk/historic-hansard/people'
 ITEMS_PER_PAGE = 5
-MAIN_URL = 'https://api.parliament.uk/'
+MAIN_URL = 'https://api.parliament.uk'
 START_DATE = 1803
 FINISH_DATE = 2005
-BASE_NO_PESON_URL = 'https://api.parliament.uk/historic-hansard/sittings/'
+BASE_NO_PESON_URL = 'https://api.parliament.uk/historic-hansard/sittings'
 MONTHS = ['jan', 'feb',
           'mar', 'apr',
           'may', 'jun',

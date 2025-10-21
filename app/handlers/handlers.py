@@ -189,8 +189,7 @@ async def pre_parsing(message: Message, state: FSMContext):
         await state.clear()
     else:
         await message.answer(
-                m.DATE_ERROR,
-                reply_markup=kb.to_main
+                m.DATE_ERROR
             )
         await type_from_date(data['keyword'], state)
 
