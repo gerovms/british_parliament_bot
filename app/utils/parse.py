@@ -15,7 +15,7 @@ import redis.asyncio as aioredis
 from ..db.db import get_document, save_document
 from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
                         ITEMS_PER_PAGE, LAST_MONTH_DAY, MAIN_URL, MONTHS,
-                        PERSON)
+                        PERSON, REDIS_EX)
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -80,7 +80,7 @@ async def fetch_page(
                 response.raise_for_status()
                 await save_document(url=url, content=response.text)
                 row = response.text
-            await redis_client.set(url, row, ex=86400)
+            await redis_client.set(url, row)
             return row
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
