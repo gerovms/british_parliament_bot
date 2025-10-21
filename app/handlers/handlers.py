@@ -7,6 +7,7 @@ from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, FSInputFile, Message
 
+from ..utils.tasks import background_parse_task
 from ..keyboards import keyboards as kb
 from ..messages import messages as m
 from ..states import states as s
@@ -185,7 +186,7 @@ async def pre_parsing(message: Message, state: FSMContext):
                 m.WAITING_MESSAGE,
                 reply_markup=kb.to_main
                 )
-        asyncio.create_task(background_parse(message, data))
+        background_parse_task.delay(message, data)
         await state.clear()
     else:
         await message.answer(

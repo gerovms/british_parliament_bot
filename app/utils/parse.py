@@ -4,7 +4,7 @@ import itertools
 import logging
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import httpx
 from aiogram import Bot
@@ -16,7 +16,7 @@ from ..db.db import get_document, save_document
 from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
                         ITEMS_PER_PAGE, LAST_MONTH_DAY, MAIN_URL, MONTHS,
                         PERSON)
-
+from .tasks import parse_urls_chunk_task
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(dotenv_path=BASE_DIR / ".env")
@@ -106,7 +106,7 @@ async def fetch_page(
                         'Произошла ошибка при запросе '
                         'списка персон.'),
                         )
-                raise Exception
+                raise
     return None
 
 

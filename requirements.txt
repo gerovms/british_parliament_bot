@@ -2,6 +2,7 @@ aiogram
 alembic
 asyncpg
 beautifulsoup4
+celery
 httpx
 lxml
 python-dotenv
