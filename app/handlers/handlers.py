@@ -55,6 +55,7 @@ async def redir_to_ways(callback: CallbackQuery, state: FSMContext):
 
 @router.message(s.SearchByName.surname)
 async def list_of_mps(message: Message, state: FSMContext):
+    await state.clear()
     await state.update_data(surname=message.text)
     await state.update_data(chat_id=message.chat.id)
     await state.update_data(user_first_name=message.from_user.first_name)
@@ -63,7 +64,7 @@ async def list_of_mps(message: Message, state: FSMContext):
     data = await state.get_data()
     data['surname'] = data['surname'].title()
     mps = await p.get_list_of_mps(data['surname'], data)
-    if not mps:
+    if not mps[0]:
         await message.answer(
             m.SURNAME_ERROR,
             reply_markup=kb.to_main
