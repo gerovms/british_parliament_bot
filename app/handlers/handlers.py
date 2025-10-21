@@ -57,6 +57,7 @@ async def redir_to_ways(callback: CallbackQuery, state: FSMContext):
 async def list_of_mps(message: Message, state: FSMContext):
     await state.update_data(surname=message.text)
     await state.update_data(chat_id=message.chat.id)
+    await state.update_data(user_first_name=message.from_user.first_name)
     logging.info(f'{message.from_user.first_name} '
                  f'ввёл фамилию {message.text}')
     data = await state.get_data()
@@ -67,7 +68,7 @@ async def list_of_mps(message: Message, state: FSMContext):
             m.SURNAME_ERROR,
             reply_markup=kb.to_main
             )
-        await ask_for_surname(message, state)
+        await ask_for_surname(message, state, data)
     else:
         await state.update_data(mps=mps)
         await message.answer(
@@ -105,6 +106,7 @@ async def writings_choose_searching_way(callback: CallbackQuery,
                                         state: FSMContext):
     keyboard = await kb.build_searching_ways_keyboard(person=False)
     await state.update_data(writings=True)
+    await state.update_data(user_first_name=callback.from_user.first_name)
     await callback.message.edit_reply_markup(reply_markup=None)
     await callback.message.answer(
         text=m.CHOOSE_WAY_MESSAGE,

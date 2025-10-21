@@ -50,13 +50,13 @@ async def get_list_of_mps(surname: str) -> List[List[List[str]]] | str:
 
 
 async def fetch_page(
-        client: httpx.AsyncClient, url: str, data: Optional[Dict] = None
+        client: httpx.AsyncClient, url: str, data: Dict
         ) -> str | None:
     """
     Асинхронная загрузка страницы.
     Возвращает None, если страница недоступна (404) или ошибка сети.
     """
-    logging.info(f'Парсим {url}')
+    logging.info(f'Парсим {url} для {data['user_first_name']}')
     retries = 3
     for attempt in range(retries):
         try:
@@ -144,7 +144,7 @@ async def parsing_fork(data: Dict):
                                 )
         else:
             result = await no_person_parsing(data, client, result)
-    return setting_file_headers(result, data)
+    return await setting_file_headers(result, data)
 
 
 async def setting_file_headers(result: List[List[str]], data: Dict):
