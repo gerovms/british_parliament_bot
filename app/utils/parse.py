@@ -40,7 +40,7 @@ async def get_list_of_mps(surname: str,
             person_link = person.find('a')['href']
             person_dates = person.find('span').text
             person_string = (
-                f'<a href="{PERSON}{person_link}">{full_name}</a> '
+                f'<a href="{PERSON}/{person_link}">{full_name}</a> '
                 f'({person_dates})'
                 )
             if len(list_of_desired_mps[-1]) == ITEMS_PER_PAGE:
@@ -140,12 +140,15 @@ async def setting_file_headers(result: List[List[str]], data: Dict):
 
 async def person_parsing(data: Dict,
                          client: httpx.AsyncClient) -> List:
+    result = []
     page = await fetch_page(client, f'{PERSON}/{data["person_info"]}', data)
     primordial_soup = BeautifulSoup(page, 'lxml')
-    years = primordial_soup.find_all('span', {'class': 'speeches-by-year'})
+    if primordial_soup:
+        years = primordial_soup.find_all('span', {'class': 'speeches-by-year'})
+    else:
+        return result
     del primordial_soup
     gc.collect()
-    result = []
     if years:
         if data['from_date'] == '0' and data['to_date'] == '0':
             for year in years:
