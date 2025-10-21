@@ -8,11 +8,21 @@ services:
     depends_on:
       - db
       - redis
+      - worker
     volumes:
       - ./results:/app/results
     networks:
       - bot_network
-
+  worker:
+    build: .
+    image: gerovms/british_parliament_bot:latest
+    env_file:
+      - ./.env
+    depends_on:
+      - redis
+    networks:
+      - bot_network
+    command: celery -A tasks worker --loglevel=info
   db:
     image: postgres:16
     restart: always
