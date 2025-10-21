@@ -2,10 +2,9 @@
 import asyncio
 
 from aiogram.types import Message
-import httpx
 from celery import shared_task
 
-from ..handlers.handlers import background_parse
+from ..handlers.core import background_parse
 
 
 @shared_task
