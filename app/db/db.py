@@ -1,12 +1,24 @@
-import asyncpg
+import asyncio
+import logging
 import os
 
+import asyncpg
+
+from .constants import DELAY, RETRIES
 
 DB_URL = os.getenv("DATABASE_URL")
 
 
 async def get_conn():
-    return await asyncpg.connect(DB_URL)
+    for i in range(RETRIES):
+        try:
+            return await asyncpg.connect(DB_URL)
+        except Exception as e:
+            if i == RETRIES - 1:
+                raise
+            logging.error(f"[DB] Failed to connect "
+                          f"(attempt {i+1}/{RETRIES}): {e}")
+            await asyncio.sleep(DELAY)
 
 
 async def init_db():

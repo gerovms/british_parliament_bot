@@ -1,0 +1,2 @@
+RETRIES = 5
+DELAY = 3
