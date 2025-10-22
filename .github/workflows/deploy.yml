@@ -39,6 +39,6 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /root/british_parliament_bot/
-            docker-compose pull
-            docker-compose up -d
+            docker compose pull
+            docker compose up -d
 
