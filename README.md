@@ -33,7 +33,7 @@ British Parliament Bot — это Telegram-бот, который помогае
 • Встроенные парсеры для доступа к материалам британского парламента
 
 🚀 Установка и запуск
-Вариант A — через Docker (рекомендуется)
+
 <pre markdown>
 git clone https://github.com/gerovms/british_parliament_bot.git
 cd british_parliament_bot
@@ -41,21 +41,6 @@ docker-compose up --build
 </pre>
 
 После сборки контейнеров бот автоматически запустится.
-
-Вариант B — Локально
-
-<pre markdown>
-git clone https://github.com/gerovms/british_parliament_bot.git
-cd british_parliament_bot
-
-python -m venv .venv
-source .venv/bin/activate   # macOS / Linux
-# или
-.venv\Scripts\activate      # Windows
-
-pip install -r requirements.txt
-python run.py
-</pre>
 
 ⚙️ Переменные окружения
 
@@ -70,6 +55,20 @@ POSTGRES_PASSWORD=
 POSTGRES_DB=
 
 DATABASE_URL=
+
+REDIS_HOST=
+
+REDIS_PORT=
+
+REDIS_DB=
+
+REDIS_MAXMEMORY=
+
+REDIS_POLICY=
+
+REDIS_URL=
+
+CELERY_BROKER_URL=
 
 Реализация бота в телеграме: @UK_Parliament_bot
 
