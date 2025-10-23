@@ -1,18 +1,17 @@
 import asyncio
 import logging
-import os
 
 from aiogram import F, Router
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, FSInputFile, Message
+from aiogram.types import CallbackQuery, Message
 
 from ..keyboards import keyboards as kb
 from ..messages import messages as m
 from ..states import states as s
+from ..tasks.tasks import background_parse_task
 from ..utils import parse as p
 from ..utils import validators as v
-from ..utils.making_file import save_parsed_data
 
 router = Router()
 
@@ -185,7 +184,7 @@ async def pre_parsing(message: Message, state: FSMContext):
                 m.WAITING_MESSAGE,
                 reply_markup=kb.to_main
                 )
-        asyncio.create_task(background_parse(message, data))
+        background_parse_task.delay(data)
         await state.clear()
     else:
         await message.answer(
@@ -194,22 +193,3 @@ async def pre_parsing(message: Message, state: FSMContext):
         await type_from_date(data['keyword'], state)
 
 
-
-async def parse_and_send(message: Message, parsed_data, filename):
-    file_path = await save_parsed_data(parsed_data, filename)
-    if not os.path.exists(file_path):
-        await message.answer("Файл не удалось создать ❌",
-                             reply_markup=kb.to_main)
-        return
-
-    document = FSInputFile(file_path, filename=filename)
-
-    await message.answer_document(document,
-                                  caption="Вот твой файл с результатами 📄",
-                                  reply_markup=kb.to_main)
-    logging.info(f'{message.from_user.first_name} получил файл')
-
-
-async def background_parse(message: Message, data: dict):
-    result, filename = await p.parsing_fork(data)
-    await parse_and_send(message, result, filename)
