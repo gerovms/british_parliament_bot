@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from app.keyboards import keyboards as kb
 from app.utils import parse as p
 from app.utils.making_file import save_parsed_data
-
+from ..db.db import get_conn
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(dotenv_path=BASE_DIR / ".env")
@@ -55,17 +55,21 @@ async def parse_and_send(data: dict, parsed_data, filename: str):
 async def background_parse(data: dict):
     """Основная логика фонового парсинга."""
     chat_id = data["chat_id"]
+    user_first_name = data["user_first_name"]
 
+    conn = await get_conn()
     try:
-        result, filename = await p.parsing_fork(data)
+        result, filename = await p.parsing_fork(data, conn)
         await parse_and_send(data, result, filename)
     except Exception as e:
-        logging.exception(f"Ошибка при парсинге: {e}")
+        logging.exception(f"Ошибка при парсинге для {user_first_name}: {e}")
         await bot.send_message(
             chat_id,
             "Произошла ошибка при обработке запроса ❌",
             reply_markup=kb.to_main,
         )
+    finally:
+        await conn.close()
 
 
 @celery_app.task(name="background_parse")

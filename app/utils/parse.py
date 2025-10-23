@@ -28,10 +28,11 @@ redis_client = aioredis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
 
 async def get_list_of_mps(surname: str,
-                          data: Dict) -> List[List[List[str]]] | str:
+                          data: Dict,
+                          conn) -> List[List[List[str]]] | str:
     list_of_mps_url = PERSON + '/' + surname[0].lower()
     async with httpx.AsyncClient() as client:
-        page = await fetch_page(client, list_of_mps_url, data)
+        page = await fetch_page(client, list_of_mps_url, data, conn)
     if page is None:
         logging.warning(f'Страница {list_of_mps_url} '
                         'не получена, пропускаем')
@@ -56,7 +57,7 @@ async def get_list_of_mps(surname: str,
 
 
 async def fetch_page(
-        client: httpx.AsyncClient, url: str, data: Dict
+        client: httpx.AsyncClient, url: str, data: Dict, conn
         ) -> str | None:
     """
     Асинхронная загрузка страницы.
@@ -71,13 +72,13 @@ async def fetch_page(
     for attempt in range(retries):
         try:
             url = url.split('#')[0]
-            row = await get_document(url)
+            row = await get_document(url, conn)
             if not row:
                 response = await client.get(
                     url, timeout=30.0, follow_redirects=True
                     )
                 response.raise_for_status()
-                await save_document(url=url, content=response.text)
+                await save_document(url, response.text, conn)
                 row = response.text
             await redis_client.set(url, row)
             return row
@@ -109,14 +110,14 @@ async def fetch_page(
     return None
 
 
-async def parsing_fork(data: Dict):
+async def parsing_fork(data: Dict, conn):
     result = [[f'По ключевому слову "{data["keyword"]}" найдено объектов: ']]
     logging.info(f'Начинаем парсить по {data}')
     async with httpx.AsyncClient() as client:
         if 'person_info' in data.keys():
-            result.extend(await person_parsing(data, client))
+            result.extend(await person_parsing(data, client, conn))
         else:
-            result.extend(await no_person_parsing(data, client))
+            result.extend(await no_person_parsing(data, client, conn))
     return await setting_file_headers(result, data)
 
 
@@ -149,9 +150,13 @@ async def setting_file_headers(result: List[List[str]], data: Dict):
 
 
 async def person_parsing(data: Dict,
-                         client: httpx.AsyncClient) -> List:
+                         client: httpx.AsyncClient,
+                         conn) -> List:
     result = []
-    page = await fetch_page(client, f'{PERSON}/{data["person_info"]}', data)
+    page = await fetch_page(client,
+                            f'{PERSON}/{data["person_info"]}',
+                            data,
+                            conn)
     primordial_soup = BeautifulSoup(page, 'lxml')
     if primordial_soup:
         years = primordial_soup.find_all('span', {'class': 'speeches-by-year'})
@@ -167,13 +172,15 @@ async def person_parsing(data: Dict,
                     result += await parse_headers_with_person(
                         data,
                         link_to_year,
-                        client
+                        client,
+                        conn
                         )
                 elif data['way'] == 'in_texts':
                     result += await parse_texts_with_person(
                         data,
                         link_to_year,
-                        client
+                        client,
+                        conn
                         )
         else:
             for year in range(int(data['from_date']),
@@ -183,25 +190,28 @@ async def person_parsing(data: Dict,
                     result += await parse_headers_with_person(
                         data,
                         link_to_year,
-                        client
+                        client,
+                        conn
                         )
                 elif data['way'] == 'in_texts':
                     result += await parse_texts_with_person(
                         data,
                         link_to_year,
-                        client
+                        client,
+                        conn
                         )
     return result
 
 
 async def no_person_parsing(data: Dict,
-                            client: httpx.AsyncClient) -> List:
+                            client: httpx.AsyncClient,
+                            conn) -> List:
     result = []
     for year in range(int(data['from_date']), int(data['to_date']) + 1):
         for month in MONTHS:
             for day in range(FIRST_MONTH_DAY, LAST_MONTH_DAY + 1):
                 link_to_day = f'{BASE_NO_PESON_URL}/{year}/{month}/{day}'
-                page = await fetch_page(client, link_to_day, data)
+                page = await fetch_page(client, link_to_day, data, conn)
                 if page is None:
                     continue
                 soup = BeautifulSoup(page, 'lxml')
@@ -243,7 +253,7 @@ async def no_person_parsing(data: Dict,
                         commons_lords,
                         year,
                         month,
-                        day
+                        day,
                         )
                 elif data['way'] == 'in_texts':
                     result += await parse_texts_without_person(
@@ -252,7 +262,8 @@ async def no_person_parsing(data: Dict,
                         year,
                         month,
                         day,
-                        client
+                        client,
+                        conn
                         )
     return result
 
@@ -260,9 +271,10 @@ async def no_person_parsing(data: Dict,
 
 async def parse_headers_with_person(data: Dict,
                                     link_to_year: str,
-                                    client: httpx.AsyncClient):
+                                    client: httpx.AsyncClient,
+                                    conn):
     desired_data = []
-    page = await fetch_page(client, link_to_year, data)
+    page = await fetch_page(client, link_to_year, data, conn)
     if page is None:
         return desired_data
     soup = BeautifulSoup(page, 'lxml')
@@ -280,9 +292,10 @@ async def parse_headers_with_person(data: Dict,
 
 async def parse_texts_with_person(data: Dict,
                                   link_to_year: str,
-                                  client: httpx.AsyncClient):
+                                  client: httpx.AsyncClient,
+                                  conn):
     desired_data = []
-    page = await fetch_page(client, link_to_year, data)
+    page = await fetch_page(client, link_to_year, data, conn)
     if page is None:
         return desired_data 
     soup = BeautifulSoup(page, 'lxml')
@@ -292,7 +305,7 @@ async def parse_texts_with_person(data: Dict,
     for contribution in contributions:
         title = contribution.find('a')
         date = contribution.find('span', {'class': 'date'}).text
-        sub_page = await fetch_page(client, f'{MAIN_URL}{title["href"]}', data)
+        sub_page = await fetch_page(client, f'{MAIN_URL}{title["href"]}', data, conn)
         if sub_page is None:
             continue
         sub_soup = BeautifulSoup(sub_page, 'lxml')
@@ -325,12 +338,13 @@ async def parse_texts_without_person(
                             year: int,
                             month: str,
                             day: int,
-                            client: httpx.AsyncClient
+                            client: httpx.AsyncClient,
+                            conn
                             ):
     desired_data = []
     logging.info(f'Парсим {year}/{month}/{day}')
     for item in commons_lords:
-        page = await fetch_page(client, f'{MAIN_URL}{item["href"]}', data)
+        page = await fetch_page(client, f'{MAIN_URL}{item["href"]}', data, conn)
         if page is None:
             continue
         soup = BeautifulSoup(page, 'lxml')

@@ -36,8 +36,7 @@ async def init_db():
     await conn.close()
 
 
-async def save_document(url: str, content: str):
-    conn = await get_conn()
+async def save_document(url: str, content: str, conn):
     try:
         await conn.execute(
             ("INSERT INTO documents (url, content) VALUES ($1, $2) "
@@ -45,12 +44,11 @@ async def save_document(url: str, content: str):
             url,
             content
             )
-    finally:
-        await conn.close()
+    except Exception as e:
+        logging.error(f"Ошибка при сохранении документа {url}: {e}")
 
 
-async def get_document(url: str):
-    conn = await get_conn()
+async def get_document(url: str, conn):
     try:
         row = await conn.fetchrow(
             "SELECT content FROM documents WHERE url = $1",
@@ -60,5 +58,6 @@ async def get_document(url: str):
             return row['content']
         else:
             return False
-    finally:
-        await conn.close()
+    except Exception as e:
+        logging.error(f"Ошибка при получении документа {url}: {e}")
+        return False

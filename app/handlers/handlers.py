@@ -6,6 +6,7 @@ from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
+from ..db.db import get_conn
 from ..keyboards import keyboards as kb
 from ..messages import messages as m
 from ..states import states as s
@@ -62,7 +63,9 @@ async def list_of_mps(message: Message, state: FSMContext):
                  f'ввёл фамилию {message.text}')
     data = await state.get_data()
     data['surname'] = data['surname'].title()
-    mps = await p.get_list_of_mps(data['surname'], data)
+    conn = await get_conn()
+    mps = await p.get_list_of_mps(data['surname'], data, conn)
+    await conn.close()
     if not mps[0]:
         await message.answer(
             m.SURNAME_ERROR
