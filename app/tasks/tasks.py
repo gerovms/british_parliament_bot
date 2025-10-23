@@ -21,7 +21,7 @@ celery_app = Celery(
     broker=CELERY_BROKER_URL
 )
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("TOKEN")
 bot = Bot(token=BOT_TOKEN)
 
 
