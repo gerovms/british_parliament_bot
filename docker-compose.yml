@@ -20,7 +20,7 @@ services:
       - redis
     networks:
       - bot_network
-    command: ["celery", "-A", "app.tasks.taske.celery_app", "worker", "--loglevel=info"]
+    command: ["celery", "-A", "app.tasks.tasks.celery_app", "worker", "--loglevel=info"]
   db:
     image: postgres:16
     restart: always
