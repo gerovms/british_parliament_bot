@@ -1,17 +1,31 @@
 import logging
+import os
+from pathlib import Path
 
+import redis.asyncio as aioredis
 from aiogram import F, Router
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
+from dotenv import load_dotenv
 
+import app.utils.parse as p
+
+from ..db.db import get_conn
 from ..keyboards import keyboards as kb
 from ..messages import messages as m
 from ..states import states as s
-from ..tasks.tasks import background_parse_task, mps_list_parse_task
+from ..tasks.tasks import background_parse_task
 from ..utils import validators as v
 
 router = Router()
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+load_dotenv(dotenv_path=BASE_DIR / ".env")
+
+BOT_TOKEN = os.getenv("TOKEN")
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = int(os.getenv("REDIS_PORT"))
+REDIS_DB = int(os.getenv("REDIS_DB"))
 
 
 @router.message(CommandStart())
@@ -60,8 +74,23 @@ async def list_of_mps(message: Message, state: FSMContext):
                  f'ввёл фамилию {message.text}')
     data = await state.get_data()
     data['surname'] = data['surname'].title()
-    mps = mps_list_parse_task.delay(data['surname'],
-                                    data)
+    bot = message.bot  # берём уже существующий экземпляр
+    conn = await get_conn()
+    redis_client = aioredis.Redis(host=REDIS_HOST,
+                                  port=REDIS_PORT,
+                                  db=REDIS_DB)
+
+    try:
+        mps = await p.get_list_of_mps(data['surname'], data, conn, redis_client, bot)
+    finally:
+        await conn.close()
+        await redis_client.close()
+        await redis_client.connection_pool.disconnect()
+
+    if not mps or not mps[0]:
+        await message.answer(m.SURNAME_ERROR)
+        await ask_for_surname(message, state)
+        return
     if not mps or not mps[0]:
         await message.answer(
             m.SURNAME_ERROR

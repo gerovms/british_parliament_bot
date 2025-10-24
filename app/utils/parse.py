@@ -87,6 +87,8 @@ async def fetch_page(
                 await save_document(url, response.text, conn)
                 row = response.text
             await redis_client.set(url, row)
+            await redis_client.close()
+            await redis_client.connection_pool.disconnect()
             return row
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
