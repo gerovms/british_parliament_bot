@@ -10,7 +10,7 @@ from ..db.db import get_conn
 from ..keyboards import keyboards as kb
 from ..messages import messages as m
 from ..states import states as s
-from ..tasks.tasks import background_parse_task
+from ..tasks.tasks import background_parse_task, mps_list_parse_task
 from ..utils import parse as p
 from ..utils import validators as v
 
@@ -63,9 +63,8 @@ async def list_of_mps(message: Message, state: FSMContext):
                  f'ввёл фамилию {message.text}')
     data = await state.get_data()
     data['surname'] = data['surname'].title()
-    conn = await get_conn()
-    mps = await p.get_list_of_mps(data['surname'], data, conn)
-    await conn.close()
+    mps = await mps_list_parse_task.delay(data['surname'],
+                                          data)
     if not mps or not mps[0]:
         await message.answer(
             m.SURNAME_ERROR

@@ -10,7 +10,7 @@ import httpx
 from aiogram import Bot
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-import redis.asyncio as aioredis
+
 
 from ..db.db import get_document, save_document
 from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
@@ -20,19 +20,21 @@ from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(dotenv_path=BASE_DIR / ".env")
 TOKEN = os.getenv("TOKEN")
-REDIS_HOST = os.getenv("REDIS_HOST")
-REDIS_PORT = int(os.getenv("REDIS_PORT"))
-REDIS_DB = int(os.getenv("REDIS_DB"))
-
-redis_client = aioredis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
 
 async def get_list_of_mps(surname: str,
                           data: Dict,
-                          conn) -> List[List[List[str]]] | str:
+                          conn,
+                          redis_client,
+                          bot) -> List[List[List[str]]] | str:
     list_of_mps_url = PERSON + '/' + surname[0].lower()
     async with httpx.AsyncClient() as client:
-        page = await fetch_page(client, list_of_mps_url, data, conn)
+        page = await fetch_page(client,
+                                list_of_mps_url,
+                                data,
+                                conn,
+                                redis_client,
+                                bot)
     if page is None:
         logging.warning(f'Страница {list_of_mps_url} '
                         'не получена, пропускаем')
@@ -57,7 +59,12 @@ async def get_list_of_mps(surname: str,
 
 
 async def fetch_page(
-        client: httpx.AsyncClient, url: str, data: Dict, conn
+        client: httpx.AsyncClient,
+        url: str,
+        data: Dict,
+        conn,
+        redis_client,
+        bot
         ) -> str | None:
     """
     Асинхронная загрузка страницы.
@@ -93,7 +100,6 @@ async def fetch_page(
             if attempt < retries - 1:
                 await asyncio.sleep(DELAY_TIME)
             else:
-                bot = Bot(token=TOKEN)
                 if data and 'from_date' in data:
                     await bot.send_message(data['chat_id'], text=(
                         'Произошла ошибка при запросе: '
@@ -110,14 +116,22 @@ async def fetch_page(
     return None
 
 
-async def parsing_fork(data: Dict, conn):
+async def parsing_fork(data: Dict, conn, redis_client, bot):
     result = [[f'По ключевому слову "{data["keyword"]}" найдено объектов: ']]
     logging.info(f'Начинаем парсить по {data}')
     async with httpx.AsyncClient() as client:
         if 'person_info' in data.keys():
-            result.extend(await person_parsing(data, client, conn))
+            result.extend(await person_parsing(data,
+                                               client,
+                                               conn,
+                                               redis_client,
+                                               bot))
         else:
-            result.extend(await no_person_parsing(data, client, conn))
+            result.extend(await no_person_parsing(data,
+                                                  client,
+                                                  conn,
+                                                  redis_client,
+                                                  bot))
     return await setting_file_headers(result, data)
 
 
@@ -151,12 +165,16 @@ async def setting_file_headers(result: List[List[str]], data: Dict):
 
 async def person_parsing(data: Dict,
                          client: httpx.AsyncClient,
-                         conn) -> List:
+                         conn,
+                         redis_client,
+                         bot) -> List:
     result = []
     page = await fetch_page(client,
                             f'{PERSON}/{data["person_info"]}',
                             data,
-                            conn)
+                            conn,
+                            redis_client,
+                            bot)
     primordial_soup = BeautifulSoup(page, 'lxml')
     if primordial_soup:
         years = primordial_soup.find_all('span', {'class': 'speeches-by-year'})
@@ -173,14 +191,18 @@ async def person_parsing(data: Dict,
                         data,
                         link_to_year,
                         client,
-                        conn
+                        conn,
+                        redis_client,
+                        bot
                         )
                 elif data['way'] == 'in_texts':
                     result += await parse_texts_with_person(
                         data,
                         link_to_year,
                         client,
-                        conn
+                        conn,
+                        redis_client,
+                        bot
                         )
         else:
             for year in range(int(data['from_date']),
@@ -191,27 +213,38 @@ async def person_parsing(data: Dict,
                         data,
                         link_to_year,
                         client,
-                        conn
+                        conn,
+                        redis_client,
+                        bot
                         )
                 elif data['way'] == 'in_texts':
                     result += await parse_texts_with_person(
                         data,
                         link_to_year,
                         client,
-                        conn
+                        conn,
+                        redis_client,
+                        bot
                         )
     return result
 
 
 async def no_person_parsing(data: Dict,
                             client: httpx.AsyncClient,
-                            conn) -> List:
+                            conn,
+                            redis_client,
+                            bot) -> List:
     result = []
     for year in range(int(data['from_date']), int(data['to_date']) + 1):
         for month in MONTHS:
             for day in range(FIRST_MONTH_DAY, LAST_MONTH_DAY + 1):
                 link_to_day = f'{BASE_NO_PESON_URL}/{year}/{month}/{day}'
-                page = await fetch_page(client, link_to_day, data, conn)
+                page = await fetch_page(client,
+                                        link_to_day,
+                                        data,
+                                        conn,
+                                        redis_client,
+                                        bot)
                 if page is None:
                     continue
                 soup = BeautifulSoup(page, 'lxml')
@@ -253,7 +286,7 @@ async def no_person_parsing(data: Dict,
                         commons_lords,
                         year,
                         month,
-                        day,
+                        day
                         )
                 elif data['way'] == 'in_texts':
                     result += await parse_texts_without_person(
@@ -263,7 +296,9 @@ async def no_person_parsing(data: Dict,
                         month,
                         day,
                         client,
-                        conn
+                        conn,
+                        redis_client,
+                        bot
                         )
     return result
 
@@ -272,9 +307,16 @@ async def no_person_parsing(data: Dict,
 async def parse_headers_with_person(data: Dict,
                                     link_to_year: str,
                                     client: httpx.AsyncClient,
-                                    conn):
+                                    conn,
+                                    redis_client,
+                                    bot):
     desired_data = []
-    page = await fetch_page(client, link_to_year, data, conn)
+    page = await fetch_page(client,
+                            link_to_year,
+                            data,
+                            conn,
+                            redis_client,
+                            bot)
     if page is None:
         return desired_data
     soup = BeautifulSoup(page, 'lxml')
@@ -293,9 +335,16 @@ async def parse_headers_with_person(data: Dict,
 async def parse_texts_with_person(data: Dict,
                                   link_to_year: str,
                                   client: httpx.AsyncClient,
-                                  conn):
+                                  conn,
+                                  redis_client,
+                                  bot):
     desired_data = []
-    page = await fetch_page(client, link_to_year, data, conn)
+    page = await fetch_page(client,
+                            link_to_year,
+                            data,
+                            conn,
+                            redis_client,
+                            bot)
     if page is None:
         return desired_data 
     soup = BeautifulSoup(page, 'lxml')
@@ -305,7 +354,12 @@ async def parse_texts_with_person(data: Dict,
     for contribution in contributions:
         title = contribution.find('a')
         date = contribution.find('span', {'class': 'date'}).text
-        sub_page = await fetch_page(client, f'{MAIN_URL}{title["href"]}', data, conn)
+        sub_page = await fetch_page(client,
+                                    f'{MAIN_URL}{title["href"]}',
+                                    data,
+                                    conn,
+                                    redis_client,
+                                    bot)
         if sub_page is None:
             continue
         sub_soup = BeautifulSoup(sub_page, 'lxml')
@@ -339,12 +393,19 @@ async def parse_texts_without_person(
                             month: str,
                             day: int,
                             client: httpx.AsyncClient,
-                            conn
+                            conn,
+                            redis_client,
+                            bot
                             ):
     desired_data = []
     logging.info(f'Парсим {year}/{month}/{day}')
     for item in commons_lords:
-        page = await fetch_page(client, f'{MAIN_URL}{item["href"]}', data, conn)
+        page = await fetch_page(client,
+                                f'{MAIN_URL}{item["href"]}',
+                                data,
+                                conn,
+                                redis_client,
+                                bot)
         if page is None:
             continue
         soup = BeautifulSoup(page, 'lxml')
