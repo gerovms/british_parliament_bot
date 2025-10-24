@@ -82,7 +82,6 @@ async def background_parse(data: dict, redis_client, bot):
     finally:
         await conn.close()
         await redis_client.close()
-        await redis_client.connection_pool.disconnect()
 
 
 @celery_app.task(name="background_parse")
@@ -95,19 +94,23 @@ def background_parse_task(data: dict):
     asyncio.run(background_parse(data, redis_client, bot))
 
 
+async def _mps_list_parse(surname: str, data: dict):
+    bot = Bot(token=BOT_TOKEN)
+    redis_client = aioredis.Redis(host=REDIS_HOST,
+                                  port=REDIS_PORT,
+                                  db=REDIS_DB)
+    conn = await get_conn()
+
+    try:
+        await get_list_of_mps(surname, data, conn, redis_client, bot)
+    except Exception as e:
+        logging.exception(f"Ошибка при парсинге списка депутатов: {e}")
+    finally:
+        await conn.close()
+        await redis_client.close()
+        await redis_client.connection_pool.disconnect()
+
+
 @celery_app.task(name="mps_list_parse")
 def mps_list_parse_task(surname: str, data: dict):
-    async def _async_task():
-        bot = Bot(token=BOT_TOKEN)
-        redis_client = aioredis.Redis(host=REDIS_HOST,
-                                      port=REDIS_PORT,
-                                      db=REDIS_DB)
-        conn = await get_conn()
-        try:
-            await get_list_of_mps(surname, data, conn, redis_client, bot)
-        finally:
-            await conn.close()
-            await redis_client.close()
-            await redis_client.connection_pool.disconnect()
-
-    asyncio.run(_async_task())
+    asyncio.run(_mps_list_parse(surname, data))
