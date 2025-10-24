@@ -213,7 +213,7 @@ async def pre_parsing(message: Message, state: FSMContext):
         position = await add_user_to_queue(data)
         await message.answer(
             f'Вы №{position} в очереди ⏳ '
-            'Когда дойдёт ваша очередь — бот начнёт обработку!'
+            'Когда дойдёт ваша очередь — бот начнёт обработку!\n'
             f'Запрос {data['keyword']}, {data['from_date']}, '
             f'{data['to_date']}.'
         )

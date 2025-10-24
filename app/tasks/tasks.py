@@ -86,9 +86,9 @@ def background_parse_task(data: dict):
         await remove_user_from_queue(chat_id)
         await bot.send_message(
             chat_id,
-            '🚀 Ваша очередь подошла! Начинаем обработку…',
-            f'Запрос {data['keyword']}, {data['from_date']}, '
-            f'{data['to_date']}.'
+            ('🚀 Ваша очередь подошла! Начинаем обработку…\n'
+             f'Запрос {data['keyword']}, {data['from_date']}, '
+             f'{data['to_date']}.')
         )
         try:
             await background_parse(data,
