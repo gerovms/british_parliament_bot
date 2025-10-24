@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Dict, List
 
 import httpx
-from aiogram import Bot
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 

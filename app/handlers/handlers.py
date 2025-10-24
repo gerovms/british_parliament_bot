@@ -1,4 +1,3 @@
-import asyncio
 import logging
 
 from aiogram import F, Router
@@ -6,12 +5,10 @@ from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-from ..db.db import get_conn
 from ..keyboards import keyboards as kb
 from ..messages import messages as m
 from ..states import states as s
 from ..tasks.tasks import background_parse_task, mps_list_parse_task
-from ..utils import parse as p
 from ..utils import validators as v
 
 router = Router()

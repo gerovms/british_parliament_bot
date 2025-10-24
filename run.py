@@ -4,13 +4,11 @@ import os
 from datetime import datetime
 from os import getenv
 
-import httpx
 from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 
 from app.db.db import init_db
 from app.handlers import router
-from app.utils.parse import redis_client
 
 
 load_dotenv()
@@ -59,8 +57,6 @@ async def main() -> None:
         await dp.start_polling(bot)
     finally:
         await bot.session.close()
-        await redis_client.close()
-        await redis_client.connection_pool.disconnect()
         logging.info(f"[{datetime.now()}] Бот остановлен")
 
 

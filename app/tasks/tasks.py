@@ -82,6 +82,7 @@ async def background_parse(data: dict, redis_client, bot):
     finally:
         await conn.close()
         await redis_client.close()
+        await redis_client.connection_pool.disconnect()
 
 
 @celery_app.task(name="background_parse")
@@ -107,5 +108,6 @@ def mps_list_parse_task(surname: str, data: dict):
         finally:
             await conn.close()
             await redis_client.close()
+            await redis_client.connection_pool.disconnect()
 
     asyncio.run(_async_task())
