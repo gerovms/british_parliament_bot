@@ -88,9 +88,16 @@ async def background_parse(data: dict, redis_client, bot):
 @celery_app.task(name="background_parse")
 def background_parse_task(data: dict):
     """Celery-обёртка для запуска асинхронного парсинга."""
-    bot = Bot(token=BOT_TOKEN)
-    redis_client = aioredis.Redis(host=REDIS_HOST,
-                                  port=REDIS_PORT,
-                                  db=REDIS_DB)
-    asyncio.run(background_parse(data, redis_client, bot))
+    async def _async_task():
+        bot = Bot(token=BOT_TOKEN)
+        redis_client = aioredis.Redis(host=REDIS_HOST,
+                                      port=REDIS_PORT,
+                                      db=REDIS_DB)
+        try:
+            await background_parse(data, redis_client, bot)
+        finally:
+            await bot.session.close()
+            await redis_client.close()
+            await redis_client.connection_pool.disconnect()
 
+    asyncio.run(_async_task())
