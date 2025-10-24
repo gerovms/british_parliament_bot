@@ -17,6 +17,7 @@ from ..messages import messages as m
 from ..states import states as s
 from ..tasks.tasks import background_parse_task
 from ..utils import validators as v
+from ..redis.redis_client import get_redis_client
 
 router = Router()
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -74,12 +75,9 @@ async def list_of_mps(message: Message, state: FSMContext):
                  f'ввёл фамилию {message.text}')
     data = await state.get_data()
     data['surname'] = data['surname'].title()
-    bot = message.bot  # берём уже существующий экземпляр
+    bot = message.bot
     conn = await get_conn()
-    redis_client = aioredis.Redis(host=REDIS_HOST,
-                                  port=REDIS_PORT,
-                                  db=REDIS_DB)
-
+    redis_client = get_redis_client()
     try:
         mps = await p.get_list_of_mps(data['surname'],
                                       data,

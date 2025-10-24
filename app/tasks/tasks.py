@@ -14,7 +14,7 @@ from app.utils import parse as p
 from app.utils.making_file import save_parsed_data
 
 from ..db.db import get_conn
-
+from ..redis.redis_client import get_redis_client
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(dotenv_path=BASE_DIR / ".env")
@@ -23,12 +23,7 @@ celery_app = Celery(
     "tasks",
     broker=CELERY_BROKER_URL
 )
-
 BOT_TOKEN = os.getenv("TOKEN")
-REDIS_HOST = os.getenv("REDIS_HOST")
-REDIS_PORT = int(os.getenv("REDIS_PORT"))
-REDIS_DB = int(os.getenv("REDIS_DB"))
-
 
 
 async def parse_and_send(data: dict,
@@ -86,9 +81,7 @@ def background_parse_task(data: dict):
     async def _async_task():
         conn = await get_conn()
         bot = Bot(token=BOT_TOKEN)
-        redis_client = aioredis.Redis(host=REDIS_HOST,
-                                      port=REDIS_PORT,
-                                      db=REDIS_DB)
+        redis_client = get_redis_client()
         try:
             await background_parse(data,
                                    conn,
