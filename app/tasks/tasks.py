@@ -81,6 +81,7 @@ async def background_parse(data: dict, redis_client, bot):
         )
     finally:
         await conn.close()
+        await redis_client.close()
 
 
 @celery_app.task(name="background_parse")
