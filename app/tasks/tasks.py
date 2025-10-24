@@ -95,15 +95,16 @@ def background_parse_task(data: dict):
 
 @celery_app.task(name="mps_list_parse")
 def mps_list_parse_task(surname: str, data: dict):
-    """Celery-обёртка для запуска асинхронного парсинга."""
-    bot = Bot(token=BOT_TOKEN)
-    redis_client = aioredis.Redis(host=REDIS_HOST,
-                                  port=REDIS_PORT,
-                                  db=REDIS_DB)
-    conn = await get_conn()
-    asyncio.run(get_list_of_mps(surname,
-                                data,
-                                conn,
-                                redis_client,
-                                bot))
-    await conn.close()
+    async def _async_task():
+        bot = Bot(token=BOT_TOKEN)
+        redis_client = aioredis.Redis(host=REDIS_HOST,
+                                      port=REDIS_PORT,
+                                      db=REDIS_DB)
+        conn = await get_conn()
+        try:
+            await get_list_of_mps(surname, data, conn, redis_client, bot)
+        finally:
+            await conn.close()
+            await redis_client.close()
+
+    asyncio.run(_async_task())
