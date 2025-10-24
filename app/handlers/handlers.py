@@ -53,7 +53,7 @@ async def redir_to_ways(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-@router.message(s.SearchByName.surname)
+@router.message(F.text, s.SearchByName.surname)
 async def list_of_mps(message: Message, state: FSMContext):
     await state.clear()
     await state.update_data(surname=message.text)
@@ -146,7 +146,7 @@ async def type_key_word(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-@router.message(s.SearchByWord.keyword)
+@router.message(F.text, s.SearchByWord.keyword)
 async def type_from_date(message: Message, state: FSMContext):
     logging.info(f'{message.from_user.first_name} '
                  f'ввёл ключевое слово {message.text}')
@@ -156,7 +156,7 @@ async def type_from_date(message: Message, state: FSMContext):
                          reply_markup=kb.to_main)
 
 
-@router.message(s.SearchByWord.from_date)
+@router.message(F.text, s.SearchByWord.from_date)
 async def type_to_date(message: Message, state: FSMContext):
     logging.info(f'{message.from_user.first_name} '
                  f'ввёл нач. дату {message.text}')
@@ -166,7 +166,7 @@ async def type_to_date(message: Message, state: FSMContext):
                          reply_markup=kb.to_main)
 
 
-@router.message(s.SearchByWord.to_date)
+@router.message(F.text, s.SearchByWord.to_date)
 async def pre_parsing(message: Message, state: FSMContext):
     await state.update_data(to_date=message.text)
     await state.update_data(chat_id=message.chat.id)
@@ -194,5 +194,3 @@ async def pre_parsing(message: Message, state: FSMContext):
                 m.DATE_ERROR
             )
         await type_from_date(data['keyword'], state)
-
-
