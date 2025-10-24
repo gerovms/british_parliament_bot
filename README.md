@@ -46,13 +46,13 @@ docker-compose up --build
 
 Перед запуском создайте файл .env в корне проекта со следующими переменными:
 
-TOKEN=
+TOKEN= Телеграм-токен бота
 
 POSTGRES_USER=
 
 POSTGRES_PASSWORD=
 
-POSTGRES_DB=
+POSTGRES_DB= Название базы данных
 
 DATABASE_URL=
 
@@ -60,15 +60,15 @@ REDIS_HOST=
 
 REDIS_PORT=
 
-REDIS_DB_PAGES=
+REDIS_DB_PAGES= База данных редиса для кэширования страниц
 
 REDIS_MAXMEMORY=
 
 REDIS_POLICY=
 
-REDIS_URL=
+REDIS_URL= Юрл для базы данных с кэшэм
 
-CELERY_BROKER_URL=
+CELERY_BROKER_URL= Юрл для базы данных воркера
 
 
 Реализация бота в телеграме: @UK_Parliament_bot
