@@ -66,7 +66,7 @@ async def list_of_mps(message: Message, state: FSMContext):
     conn = await get_conn()
     mps = await p.get_list_of_mps(data['surname'], data, conn)
     await conn.close()
-    if not mps[0]:
+    if not mps and not mps[0]:
         await message.answer(
             m.SURNAME_ERROR
             )
