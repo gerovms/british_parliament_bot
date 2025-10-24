@@ -60,8 +60,8 @@ async def list_of_mps(message: Message, state: FSMContext):
                  f'ввёл фамилию {message.text}')
     data = await state.get_data()
     data['surname'] = data['surname'].title()
-    mps = await mps_list_parse_task.delay(data['surname'],
-                                          data)
+    mps = mps_list_parse_task.delay(data['surname'],
+                                    data)
     if not mps or not mps[0]:
         await message.answer(
             m.SURNAME_ERROR
