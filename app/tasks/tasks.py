@@ -58,8 +58,8 @@ async def parse_and_send(data: dict,
 
 async def background_parse(data: dict, conn, redis_client, bot):
     """Основная логика фонового парсинга."""
-    chat_id = data["chat_id"]
-    user_first_name = data["user_first_name"]
+    chat_id = data['chat_id']
+    user_first_name = data['user_first_name']
     try:
         result, filename = await p.parsing_fork(data,
                                                 conn,
@@ -87,6 +87,8 @@ def background_parse_task(data: dict):
         await bot.send_message(
             chat_id,
             '🚀 Ваша очередь подошла! Начинаем обработку…',
+            f'Запрос {data['keyword']}, {data['from_date']}, '
+            f'{data['to_date']}.'
         )
         try:
             await background_parse(data,
