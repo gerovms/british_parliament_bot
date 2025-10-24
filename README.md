@@ -46,7 +46,7 @@ docker-compose up --build
 
 Перед запуском создайте файл .env в корне проекта со следующими переменными:
 
-TOKEN=Ваш токен
+TOKEN=
 
 POSTGRES_USER=
 
@@ -60,7 +60,7 @@ REDIS_HOST=
 
 REDIS_PORT=
 
-REDIS_DB=
+REDIS_DB_PAGES=
 
 REDIS_MAXMEMORY=
 
@@ -69,6 +69,7 @@ REDIS_POLICY=
 REDIS_URL=
 
 CELERY_BROKER_URL=
+
 
 Реализация бота в телеграме: @UK_Parliament_bot
 
