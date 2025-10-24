@@ -81,7 +81,11 @@ async def list_of_mps(message: Message, state: FSMContext):
                                   db=REDIS_DB)
 
     try:
-        mps = await p.get_list_of_mps(data['surname'], data, conn, redis_client, bot)
+        mps = await p.get_list_of_mps(data['surname'],
+                                      data,
+                                      conn,
+                                      redis_client,
+                                      bot)
     finally:
         await conn.close()
         await redis_client.close()
