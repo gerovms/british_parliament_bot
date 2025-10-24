@@ -22,10 +22,13 @@ celery_app = Celery(
 )
 
 BOT_TOKEN = os.getenv("TOKEN")
-bot = Bot(token=BOT_TOKEN)
 
 
-async def parse_and_send(data: dict, parsed_data, filename: str):
+
+async def parse_and_send(data: dict,
+                         parsed_data,
+                         filename: str,
+                         bot: Bot):
     """Сохраняет файл и отправляет его пользователю."""
     chat_id = data["chat_id"]
     user_first_name = data["user_first_name"]
@@ -56,11 +59,11 @@ async def background_parse(data: dict):
     """Основная логика фонового парсинга."""
     chat_id = data["chat_id"]
     user_first_name = data["user_first_name"]
-
+    bot = Bot(token=BOT_TOKEN)
     conn = await get_conn()
     try:
         result, filename = await p.parsing_fork(data, conn)
-        await parse_and_send(data, result, filename)
+        await parse_and_send(data, result, filename, bot)
     except Exception as e:
         logging.exception(f"Ошибка при парсинге для {user_first_name}: {e}")
         await bot.send_message(
