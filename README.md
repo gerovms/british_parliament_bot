@@ -62,6 +62,8 @@ REDIS_PORT=
 
 REDIS_DB_PAGES= База данных редиса для кэширования страниц
 
+REDIS_DB_QUEUE=
+
 REDIS_MAXMEMORY=
 
 REDIS_POLICY=

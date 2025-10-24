@@ -16,8 +16,8 @@ async def get_conn():
         except Exception as e:
             if i == RETRIES - 1:
                 raise
-            logging.error(f"[DB] Failed to connect "
-                          f"(attempt {i+1}/{RETRIES}): {e}")
+            logging.error(f'[DB] Failed to connect '
+                          f'(attempt {i+1}/{RETRIES}): {e}')
             await asyncio.sleep(DELAY)
 
 
@@ -45,7 +45,7 @@ async def save_document(url: str, content: str, conn):
             content
             )
     except Exception as e:
-        logging.error(f"Ошибка при сохранении документа {url}: {e}")
+        logging.error(f'Ошибка при сохранении документа {url}: {e}')
 
 
 async def get_document(url: str, conn):
@@ -59,5 +59,5 @@ async def get_document(url: str, conn):
         else:
             return False
     except Exception as e:
-        logging.error(f"Ошибка при получении документа {url}: {e}")
+        logging.error(f'Ошибка при получении документа {url}: {e}')
         return False

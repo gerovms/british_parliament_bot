@@ -15,11 +15,11 @@ from ..db.db import get_document, save_document
 from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
                         ITEMS_PER_PAGE, LAST_MONTH_DAY, MAIN_URL, MONTHS,
                         PERSON)
-from ..redis.redis_client import get_redis_client
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-load_dotenv(dotenv_path=BASE_DIR / ".env")
-TOKEN = os.getenv("TOKEN")
+load_dotenv(dotenv_path=BASE_DIR / '.env')
+TOKEN = os.getenv('TOKEN')
 
 
 async def get_list_of_mps(surname: str,
@@ -73,7 +73,7 @@ async def fetch_page(
     logging.info(f'Парсим {url} для {data['user_first_name']}')
     cached_page = await redis_client.get(url)
     if cached_page:
-        logging.info(f"Страница {url} получена из Redis")
+        logging.info(f'Страница {url} получена из Redis')
         return cached_page.decode('utf-8')
     retries = 3
     for attempt in range(retries):
@@ -96,7 +96,7 @@ async def fetch_page(
             else:
                 return None
         except (httpx.HTTPError, httpx.StreamError) as e:
-            logging.error(f"Сетевая ошибка {e} при запросе {url}")
+            logging.error(f'Сетевая ошибка {e} при запросе {url}')
             if attempt < retries - 1:
                 await asyncio.sleep(DELAY_TIME)
             else:
@@ -151,14 +151,14 @@ async def setting_file_headers(result: List[List[str]], data: Dict):
     else:
         result[0][0] += '; за весь период активности персоны.'
     if 'person_info' in data.keys():
-        filename = (f'{data["person_info"]}.{data["keyword"]}.'
-                    f'{data["from_date"]}.{data["to_date"]}.txt')
+        filename = (f'{data['person_info']}.{data['keyword']}.'
+                    f'{data['from_date']}.{data['to_date']}.txt')
     elif 'writings' in data.keys():
-        filename = (f'{data["keyword"]}.writings.'
-                    f'{data["from_date"]}.{data["to_date"]}.txt')
+        filename = (f'{data['keyword']}.writings.'
+                    f'{data['from_date']}.{data['to_date']}.txt')
     else:
-        filename = (f'{data["keyword"]}.sittings.'
-                    f'{data["from_date"]}.{data["to_date"]}.txt')
+        filename = (f'{data['keyword']}.sittings.'
+                    f'{data['from_date']}.{data['to_date']}.txt')
     gc.collect()
     return result, filename
 
@@ -170,7 +170,7 @@ async def person_parsing(data: Dict,
                          bot) -> List:
     result = []
     page = await fetch_page(client,
-                            f'{PERSON}/{data["person_info"]}',
+                            f'{PERSON}/{data['person_info']}',
                             data,
                             conn,
                             redis_client,

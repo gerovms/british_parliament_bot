@@ -63,12 +63,12 @@ async def build_persons_keyboard(mps, page: int = 0) -> InlineKeyboardMarkup:
     nav_buttons = []
     if page > 0:
         nav_buttons.append(InlineKeyboardButton(
-            text="⬅️ Назад",
+            text='⬅️ Назад',
             callback_data=f'page:{page - 1}'
             ))
     if page < len(mps) - 1:
         nav_buttons.append(InlineKeyboardButton(
-            text="Вперёд ➡️",
+            text='Вперёд ➡️',
             callback_data=f'page:{page + 1}'
             ))
     if nav_buttons:

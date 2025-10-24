@@ -13,16 +13,16 @@ from app.handlers import router
 
 load_dotenv()
 
-TOKEN = getenv("TOKEN")
+TOKEN = getenv('TOKEN')
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
-logging.getLogger("httpx").disabled = True
-logging.getLogger("httpcore").disabled = True
+logging.getLogger('httpx').disabled = True
+logging.getLogger('httpcore').disabled = True
 
-RESULTS_DIR = os.path.join(os.getcwd(), "results")
+RESULTS_DIR = os.path.join(os.getcwd(), 'results')
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 dp = Dispatcher()
@@ -38,18 +38,18 @@ async def cleanup_results_folder():
                 try:
                     if os.path.isfile(file_path):
                         os.remove(file_path)
-                        logging.info(f"[{datetime.now()}] Удалён файл: "
-                                     f"{filename}")
+                        logging.info(f'[{datetime.now()}] Удалён файл: '
+                                     f'{filename}')
                 except Exception as e:
-                    logging.error(f"[{datetime.now()}] Ошибка при удалении "
-                                  f"{filename}: {e}")
+                    logging.error(f'[{datetime.now()}] Ошибка при удалении '
+                                  f'{filename}: {e}')
         await asyncio.sleep(24 * 60 * 60)
 
 
 async def main() -> None:
     await init_db()
     bot = Bot(token=TOKEN)
-    logging.info(f"[{datetime.now()}] Бот запущен")
+    logging.info(f'[{datetime.now()}] Бот запущен')
 
     asyncio.create_task(cleanup_results_folder())
 
@@ -57,8 +57,8 @@ async def main() -> None:
         await dp.start_polling(bot)
     finally:
         await bot.session.close()
-        logging.info(f"[{datetime.now()}] Бот остановлен")
+        logging.info(f'[{datetime.now()}] Бот остановлен')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     asyncio.run(main())

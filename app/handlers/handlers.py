@@ -2,7 +2,6 @@ import logging
 import os
 from pathlib import Path
 
-import redis.asyncio as aioredis
 from aiogram import F, Router
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
@@ -14,16 +13,16 @@ import app.utils.parse as p
 from ..db.db import get_conn
 from ..keyboards import keyboards as kb
 from ..messages import messages as m
-from ..states import states as s
-from ..tasks.tasks import background_parse_task
-from ..utils import validators as v
 from ..redis.redis_client import get_redis_client
+from ..states import states as s
+from ..tasks.tasks import add_user_to_queue, background_parse_task
+from ..utils import validators as v
 
 router = Router()
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(dotenv_path=BASE_DIR / ".env")
 
-BOT_TOKEN = os.getenv("TOKEN")
+BOT_TOKEN = os.getenv('TOKEN')
 
 
 @router.message(CommandStart())
@@ -120,7 +119,7 @@ async def change_page(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-@router.callback_query(F.data == "back_to_surname")
+@router.callback_query(F.data == 'back_to_surname')
 async def back_to_menu_handler(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await type_surname(callback.message, state)
@@ -211,6 +210,11 @@ async def pre_parsing(message: Message, state: FSMContext):
                 m.WAITING_MESSAGE,
                 reply_markup=kb.to_main
                 )
+        position = await add_user_to_queue(data)
+        await message.answer(
+            f'Вы №{position} в очереди ⏳. '
+            'Когда дойдёт ваша очередь — бот начнёт обработку!'
+        )
         background_parse_task.delay(data)
         await state.clear()
     else:
