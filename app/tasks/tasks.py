@@ -61,11 +61,10 @@ async def parse_and_send(data: dict,
     logging.info(f"{user_first_name} получил файл")
 
 
-async def background_parse(data: dict, redis_client, bot):
+async def background_parse(data: dict, conn, redis_client, bot):
     """Основная логика фонового парсинга."""
     chat_id = data["chat_id"]
     user_first_name = data["user_first_name"]
-    conn = await get_conn()
     try:
         result, filename = await p.parsing_fork(data,
                                                 conn,
@@ -79,23 +78,24 @@ async def background_parse(data: dict, redis_client, bot):
             "Произошла ошибка при обработке запроса ❌",
             reply_markup=kb.to_main,
         )
-    finally:
-        await conn.close()
-        await redis_client.close()
-        await redis_client.connection_pool.disconnect()
 
 
 @celery_app.task(name="background_parse")
 def background_parse_task(data: dict):
     """Celery-обёртка для запуска асинхронного парсинга."""
     async def _async_task():
+        conn = await get_conn()
         bot = Bot(token=BOT_TOKEN)
         redis_client = aioredis.Redis(host=REDIS_HOST,
                                       port=REDIS_PORT,
                                       db=REDIS_DB)
         try:
-            await background_parse(data, redis_client, bot)
+            await background_parse(data,
+                                   conn,
+                                   redis_client,
+                                   bot)
         finally:
+            await conn.close()
             await bot.session.close()
             await redis_client.close()
             await redis_client.connection_pool.disconnect()
