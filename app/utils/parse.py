@@ -367,13 +367,11 @@ async def parse_texts_with_person(data: Dict,
             continue
         sub_soup = BeautifulSoup(sub_page, 'lxml')
         person_id = data['person_info']
-        persons_speeches = sub_soup.find_all(
-            'blockquote',
-            {'cite': re.compile(rf'{PERSON_PATTERN}{person_id}/?$')}
-        )
+        persons_speeches = sub_soup.find_all('blockquote')
         sitting_text = ''
         for speech in persons_speeches:
-            sitting_text += await parse_sitting(speech)
+            if person_id in speech['href']:
+                sitting_text += await parse_sitting(speech)
         if data['keyword'] in sitting_text:
             desired_data.append([f'{date} {title.text} – '
                                 f'{MAIN_URL}{title['href']}\n'])
