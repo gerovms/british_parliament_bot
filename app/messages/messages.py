@@ -52,7 +52,6 @@ DATE_ERROR = ('Неправильный ввод даты, повторите. '
               'не более 10 лет')
 
 
-
 async def build_persons_message(mps, page: int = 0) -> str:
     page_items = mps[page]
     message_text = 'Персоны на этой странице:\n\n'

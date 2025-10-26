@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 from ..db.db import get_document, save_document
 from .constants import (BASE_NO_PESON_URL, DELAY_TIME, FIRST_MONTH_DAY,
                         ITEMS_PER_PAGE, LAST_MONTH_DAY, MAIN_URL, MONTHS,
-                        PERSON)
+                        PERSON, PERSON_PATTERN)
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -369,7 +369,7 @@ async def parse_texts_with_person(data: Dict,
         person_id = data['person_info']
         persons_speeches = sub_soup.find_all(
             'blockquote',
-            {'cite': re.compile(rf"{re.escape(person_id)}(?:/|$)")}
+            {'cite': re.compile(rf'{PERSON_PATTERN}{person_id}/?$')}
         )
         sitting_text = ''
         for speech in persons_speeches:
