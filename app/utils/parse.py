@@ -370,7 +370,7 @@ async def parse_texts_with_person(data: Dict,
         persons_speeches = sub_soup.find_all('blockquote')
         sitting_text = ''
         for speech in persons_speeches:
-            if person_id in speech['cite']:
+            if 'cite' in speech.attrs and person_id in speech['cite']:
                 sitting_text += await parse_sitting(speech)
         if data['keyword'] in sitting_text:
             desired_data.append([f'{date} {title.text} – '
