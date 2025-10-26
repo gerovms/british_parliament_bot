@@ -366,7 +366,7 @@ async def parse_texts_with_person(data: Dict,
         if sub_page is None:
             continue
         sub_soup = BeautifulSoup(sub_page, 'lxml')
-        person_id = data['surname']
+        person_id = data['person_info']
         persons_speeches = sub_soup.find_all(
             'blockquote',
             {'cite': re.compile(fr".*{re.escape(person_id)}.*")}
