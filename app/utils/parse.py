@@ -370,8 +370,7 @@ async def parse_texts_with_person(data: Dict,
         persons_speeches = sub_soup.find_all('blockquote')
         sitting_text = ''
         for speech in persons_speeches:
-            if 'cite' in speech.attrs and person_id in speech['cite']:
-                sitting_text += await parse_sitting(speech)
+            sitting_text += await parse_contribution(speech, person_id)
         if data['keyword'] in sitting_text:
             desired_data.append([f'{date} {title.text} – '
                                 f'{MAIN_URL}{title['href']}\n'])
@@ -437,3 +436,9 @@ async def parse_sitting(sub_soup):
     for tag in sitting_text_tags:
         sitting_text += tag.get_text(' ', strip=True).upper()
     return sitting_text
+
+
+async def parse_contribution(speech, person_id):
+    if 'cite' in speech.attrs and person_id in speech['cite']:
+        return speech.get_text(' ', strip=True).upper()
+    return ''
