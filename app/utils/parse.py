@@ -4,7 +4,9 @@ import itertools
 import logging
 import os
 from pathlib import Path
+import re
 from typing import Dict, List
+
 
 import httpx
 from bs4 import BeautifulSoup
@@ -321,6 +323,7 @@ async def parse_headers_with_person(data: Dict,
         return desired_data
     soup = BeautifulSoup(page, 'lxml')
     contributions = soup.find_all('p', {'class': 'person-contribution'})
+
     del soup
     gc.collect()
     for contribution in contributions:
@@ -363,10 +366,19 @@ async def parse_texts_with_person(data: Dict,
         if sub_page is None:
             continue
         sub_soup = BeautifulSoup(sub_page, 'lxml')
-        sitting_text = await parse_sitting(sub_soup)
+        person_id = data['surname']
+        persons_speeches = sub_soup.find_all(
+            'blockquote',
+            {'cite': re.compile(fr".*{re.escape(person_id)}.*")}
+        )
+        sitting_text = ''
+        for speech in persons_speeches:
+            sitting_text += await parse_sitting(speech)
         if data['keyword'] in sitting_text:
             desired_data.append([f'{date} {title.text} – '
                                 f'{MAIN_URL}{title['href']}\n'])
+    del sitting_text
+    del sub_soup
     return desired_data
 
 
@@ -425,5 +437,5 @@ async def parse_sitting(sub_soup):
             {'class': 'hentry member_contribution'}
             )
     for tag in sitting_text_tags:
-        sitting_text += tag.text.upper()
+        sitting_text += tag.get_text(' ', strip=True).upper()
     return sitting_text
