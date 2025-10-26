@@ -369,7 +369,7 @@ async def parse_texts_with_person(data: Dict,
         person_id = data['person_info']
         persons_speeches = sub_soup.find_all(
             'blockquote',
-            {'cite': re.compile(fr".*{re.escape(person_id)}.*")}
+            {'cite': re.compile(rf"/{re.escape(person_id)}(?:/|$)")}
         )
         sitting_text = ''
         for speech in persons_speeches:
