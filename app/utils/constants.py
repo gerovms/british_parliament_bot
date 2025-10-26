@@ -15,4 +15,4 @@ LAST_MONTH_DAY = 31
 DATE_RANGE = 11
 DELAY_TIME = 5
 CELERY_QUEUE_TABLE_NAME = 'celery_user_queue'
-PERSON_PATTERN = 'https?://api\.parliament\.uk/historic-hansard/people/'
+PERSON_PATTERN = r'https?://api\.parliament\.uk/historic-hansard/people/'
